@@ -24,7 +24,7 @@ public:
     // Initializes to empty string.
     inline str_ref_template();
     
-    // Initializes from null-terminated string.
+    // Initializes from a null-terminated string.
     // Null is acceptable. It means empty string.
     inline str_ref_template(const CharT* sz);
     // Initializes from not null-terminated string.
@@ -35,15 +35,20 @@ public:
     struct StillNullTerminated { };
     inline str_ref_template(const CharT* str, size_t length, StillNullTerminated);
     
-    // Initializes from STL string.
+    // Initializes from an STL string.
+    // length can exceed actual str.length() - it then spans to the end of str.
     inline str_ref_template(const StringT& str, size_t offset = 0, size_t length = SIZE_MAX);
 
+    // Copy constructor.
     inline str_ref_template(const str_ref_template<CharT>& src, size_t offset = 0, size_t length = SIZE_MAX);
+    // Move constructor.
     inline str_ref_template(str_ref_template<CharT>&& src);
     
     inline ~str_ref_template();
 
+    // Copy assignment operator.
     inline str_ref_template<CharT>& operator=(const str_ref_template<CharT>& src);
+    // Move assignment operator.
     inline str_ref_template<CharT>& operator=(str_ref_template<CharT>&& src);
 
     inline bool empty() const { return m_Length == 0; }
@@ -55,7 +60,7 @@ public:
     inline const CharT* end() const { return m_Begin + m_Length; }
     inline const CharT* back() const { return m_Begin + m_Length; }
     inline CharT operator[](size_t index) const { return m_Begin[index]; }
-    inline CharT at(size_t index) const { return m_Begin + index; }
+    inline CharT at(size_t index) const { return m_Begin[index]; }
 
     // Returns null-terminated string with contents of this object.
     // Possibly an internal copy.
@@ -167,11 +172,10 @@ template<typename CharT>
 inline str_ref_template<CharT>::str_ref_template(str_ref_template<CharT>&& src) :
 	m_Length(src.m_Length),
 	m_Begin(src.m_Begin),
-	m_NullTerminatedPtr(src.m_NullTerminatedPtr)
+	m_NullTerminatedPtr(src.m_NullTerminatedPtr.exchange(0))
 {
 	src.m_Begin = nullptr;
 	src.m_Length = 0;
-	src.m_NullTerminatedPtr = 0;
 }
 
 template<typename CharT>
@@ -207,10 +211,9 @@ inline str_ref_template<CharT>& str_ref_template<CharT>::operator=(str_ref_templ
 			delete[] (CharT*)v;
 		m_Begin = src.m_Begin;
 		m_Length = src.m_Length;
-		m_NullTerminatedPtr = src.m_NullTerminatedPtr;
+		m_NullTerminatedPtr = src.m_NullTerminatedPtr.exchange(0);
 		src.m_Begin = nullptr;
 		src.m_Length = 0;
-		src.m_NullTerminatedPtr = 0;
     }
 	return *this;
 }
