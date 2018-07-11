@@ -1,4 +1,5 @@
 #include "str_ref.hpp"
+#include <thread>
 
 #define TEST(expr)   do { \
     if(!(expr)) { \
@@ -138,6 +139,32 @@ static void TestZeroCharacter()
     TEST(memcmp(original, str.c_str(), 8) == 0);
 }
 
+static void TestMultithreading()
+{
+    const char* original = "ABCDEF";
+    str_ref substr = str_ref(original, 4);
+
+    constexpr size_t THREAD_COUNT = 32;
+    std::thread threads[THREAD_COUNT];
+    const char* ptrs[THREAD_COUNT];
+    for(size_t i = 0; i < THREAD_COUNT; ++i)
+    {
+        threads[i] = std::thread([i, &substr, &ptrs]() {
+            TEST(substr.length() == 4);
+            const char* cstr = substr.c_str();
+            TEST(strcmp(cstr, "ABCD") == 0);
+            ptrs[i] = cstr;
+        });
+    }
+
+    for(size_t i = 0; i < THREAD_COUNT; ++i)
+    {
+        // Make sure the same pointer was returned on all threads.
+        TEST(ptrs[i] == substr.c_str());
+        threads[i].join();
+    }
+}
+
 int main()
 {
     TestBasicConstruction();
@@ -145,4 +172,5 @@ int main()
     TestCopying();
     TestOperators();
     TestZeroCharacter();
+    TestMultithreading();
 }
