@@ -36,7 +36,7 @@ public:
     inline str_ref_template(const CharT* str, size_t length, StillNullTerminated);
     
     // Initializes from an STL string.
-    // length can exceed actual str.length() - it then spans to the end of str.
+    // length can exceed actual str.length(). It then spans to the end of str.
     inline str_ref_template(const StringT& str, size_t offset = 0, size_t length = SIZE_MAX);
 
     // Copy constructor.
@@ -51,14 +51,14 @@ public:
     // Move assignment operator.
     inline str_ref_template<CharT>& operator=(str_ref_template<CharT>&& src);
 
-    inline bool empty() const { return m_Length == 0; }
-    inline size_t length() const { return m_Length; }
-    inline size_t size() const { return m_Length; }
+    inline size_t length() const;
+    inline size_t size() const { return length(); }
+    inline bool empty() const { return length() == 0; }
     inline const CharT* data() const { return m_Begin; }
     inline const CharT* begin() const { return m_Begin; }
     inline const CharT* front() const { return m_Begin; }
-    inline const CharT* end() const { return m_Begin + m_Length; }
-    inline const CharT* back() const { return m_Begin + m_Length; }
+    inline const CharT* end() const { return m_Begin + length(); }
+    inline const CharT* back() const { return m_Begin + length(); }
     inline CharT operator[](size_t index) const { return m_Begin[index]; }
     inline CharT at(size_t index) const { return m_Begin[index]; }
 
@@ -67,27 +67,27 @@ public:
     inline const CharT* c_str() const;
 
     // Returns substring of this string.
-    str_ref_template<CharT> substr(size_t offset = 0, size_t length = SIZE_MAX);
+    // length can exceed actual length(). It then spans to the end of this string.
+    inline str_ref_template<CharT> substr(size_t offset = 0, size_t length = SIZE_MAX);
 
     inline void to_string(StringT& dst) { dst.assign(begin(), end()); }
 
     /* TODO:
     swap
-    operator==, !=, < > etc.
+    operator< > etc.
     starts_with, ends_with
     comarison case-insensitive
-    Rename to str_view.
-    Read more about std::basic_string_view
     */
 
     inline bool operator==(const str_ref_template<CharT>& rhs) const;
     inline bool operator!=(const str_ref_template<CharT>& rhs) const { return !operator==(rhs); }
 
 private:
-    size_t m_Length;
+    // SIZE_MAX means unknown.
+    mutable std::atomic<size_t> m_Length;
     const CharT* m_Begin;
-    // Bit 0 set means string pointed by m_Begin + m_Length is null-terminated by itself.
-    // Else: any others bits set mean pointer to array with null-terminated copy.
+    // 1 means pointed string is null-terminated by itself.
+    // Any others bits set mean pointer to array with null-terminated copy.
     mutable std::atomic<uintptr_t> m_NullTerminatedPtr;
 };
 
@@ -104,7 +104,7 @@ inline str_ref_template<CharT>::str_ref_template() :
 
 template<typename CharT>
 inline str_ref_template<CharT>::str_ref_template(const CharT* sz) :
-	m_Length(sz ? tstrlen(sz) : 0),
+	m_Length(sz ? SIZE_MAX : 0),
 	m_Begin(sz),
 	m_NullTerminatedPtr(sz ? 1 : 0)
 {
@@ -158,24 +158,35 @@ inline str_ref_template<CharT>::str_ref_template(const str_ref_template<CharT>& 
 	m_Begin(nullptr),
 	m_NullTerminatedPtr(0)
 {
-	assert(offset <= src.m_Length);
-    m_Length = std::min(length, src.m_Length - offset);
-    if(m_Length)
+    // Source length is unknown, constructor doesn't limit the length - it may remain unknown.
+    if(src.m_Length == SIZE_MAX && length == SIZE_MAX)
     {
+        m_Length = SIZE_MAX;
         m_Begin = src.m_Begin + offset;
-        if(src.m_NullTerminatedPtr && m_Length == src.m_Length - offset)
-            m_NullTerminatedPtr = 1;
+        assert(src.m_NullTerminatedPtr == 1);
+        m_NullTerminatedPtr = 1;
+    }
+    else
+    {
+        const size_t srcLen = src.length();
+	    assert(offset <= srcLen);
+        m_Length = std::min(length, srcLen - offset);
+        if(m_Length)
+        {
+            m_Begin = src.m_Begin + offset;
+            if(src.m_NullTerminatedPtr == 1 && m_Length == srcLen - offset)
+                m_NullTerminatedPtr = 1;
+        }
     }
 }
 
 template<typename CharT>
 inline str_ref_template<CharT>::str_ref_template(str_ref_template<CharT>&& src) :
-	m_Length(src.m_Length),
+	m_Length(src.m_Length.exchange(0)),
 	m_Begin(src.m_Begin),
 	m_NullTerminatedPtr(src.m_NullTerminatedPtr.exchange(0))
 {
 	src.m_Begin = nullptr;
-	src.m_Length = 0;
 }
 
 template<typename CharT>
@@ -195,7 +206,7 @@ inline str_ref_template<CharT>& str_ref_template<CharT>::operator=(const str_ref
 		if(v > 1)
 			delete[] (CharT*)v;
 		m_Begin = src.m_Begin;
-		m_Length = src.m_Length;
+		m_Length = src.m_Length.load();
 		m_NullTerminatedPtr = src.m_NullTerminatedPtr == 1 ? 1 : 0;
     }
 	return *this;
@@ -210,12 +221,26 @@ inline str_ref_template<CharT>& str_ref_template<CharT>::operator=(str_ref_templ
 		if(v > 1)
 			delete[] (CharT*)v;
 		m_Begin = src.m_Begin;
-		m_Length = src.m_Length;
+		m_Length = src.m_Length.exchange(0);
 		m_NullTerminatedPtr = src.m_NullTerminatedPtr.exchange(0);
 		src.m_Begin = nullptr;
-		src.m_Length = 0;
     }
 	return *this;
+}
+
+template<typename CharT>
+inline size_t str_ref_template<CharT>::length() const
+{
+    size_t len = m_Length;
+    if(len == SIZE_MAX)
+    {
+        assert(m_NullTerminatedPtr == 1);
+        len = tstrlen(m_Begin);
+        // It doesn't matter if other thread does it at the same time.
+        // It will atomically set it to the same value.
+        m_Length = len;
+    }
+    return len;
 }
 
 template<typename CharT>
@@ -227,7 +252,7 @@ inline const CharT* str_ref_template<CharT>::c_str() const
     uintptr_t v = m_NullTerminatedPtr;
 	if(v == 1)
     {
-        assert(m_Begin[m_Length] == (CharT)0); // Make sure it's really null terminated.
+        assert(m_Begin[length()] == (CharT)0); // Make sure it's really null terminated.
 		return m_Begin;
     }
 	if(v == 0)
@@ -253,10 +278,18 @@ inline const CharT* str_ref_template<CharT>::c_str() const
 template<typename CharT>
 inline str_ref_template<CharT> str_ref_template<CharT>::substr(size_t offset, size_t length)
 {
-	assert(offset <= m_Length);
-	length = std::min(length, m_Length - offset);
+    // Length can remain unknown.
+    if(m_Length == SIZE_MAX && length == SIZE_MAX)
+    {
+        assert(m_NullTerminatedPtr == 1);
+        return str_ref_template<CharT>(m_Begin + offset);
+    }
+
+    const size_t thisLen = this->length();
+    assert(offset <= thisLen);
+	length = std::min(length, thisLen - offset);
 	// Result will be null-terminated.
-	if(m_NullTerminatedPtr == 1 && length == m_Length - offset)
+	if(m_NullTerminatedPtr == 1 && length == thisLen - offset)
 		return str_ref_template<CharT>(m_Begin + offset, length, StillNullTerminated());
 	// Result will not be null-terminated.
 	return str_ref_template<CharT>(m_Begin + offset, length);
@@ -265,7 +298,13 @@ inline str_ref_template<CharT> str_ref_template<CharT>::substr(size_t offset, si
 template<typename CharT>
 inline bool str_ref_template<CharT>::operator==(const str_ref_template<CharT>& rhs) const
 {
-    const size_t len = length();
-    return len == rhs.length() &&
-        memcmp(data(), rhs.data(), len) == 0;
+    const size_t thisLen = length();
+    if(thisLen != rhs.length())
+        return false;
+    if(thisLen > 0)
+    {
+        return memcmp(data(), rhs.data(), thisLen * sizeof(CharT)) == 0;
+    }
+    return true;
+        
 }
