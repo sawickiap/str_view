@@ -3,6 +3,7 @@
 #include <string>
 #include <atomic>
 #include <algorithm> // for min, max
+#include <memory> // for memcmp
 
 #include <cassert>
 #include <cstring>
@@ -53,7 +54,7 @@ public:
     inline const CharT* front() const { return m_Begin; }
     inline const CharT* end() const { return m_Begin + m_Length; }
     inline const CharT* back() const { return m_Begin + m_Length; }
-    inline CharT operator[](size_t index) const { return m_Begin + index; }
+    inline CharT operator[](size_t index) const { return m_Begin[index]; }
     inline CharT at(size_t index) const { return m_Begin + index; }
 
     // Returns null-terminated string with contents of this object.
@@ -73,6 +74,9 @@ public:
     Rename to str_view.
     Read more about std::basic_string_view
     */
+
+    inline bool operator==(const str_ref_template<CharT>& rhs) const;
+    inline bool operator!=(const str_ref_template<CharT>& rhs) const { return !operator==(rhs); }
 
 private:
     size_t m_Length;
@@ -253,4 +257,12 @@ inline str_ref_template<CharT> str_ref_template<CharT>::substr(size_t offset, si
 		return str_ref_template<CharT>(m_Begin + offset, length, StillNullTerminated());
 	// Result will not be null-terminated.
 	return str_ref_template<CharT>(m_Begin + offset, length);
+}
+
+template<typename CharT>
+inline bool str_ref_template<CharT>::operator==(const str_ref_template<CharT>& rhs) const
+{
+    const size_t len = length();
+    return len == rhs.length() &&
+        memcmp(data(), rhs.data(), len) == 0;
 }
