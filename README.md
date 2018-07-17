@@ -56,14 +56,14 @@ sprintf(sz, "Number is %i", 7);
 Foo(sz); // Passed "Number is 7"
 ```
 
-View can be created from STL string.
+View can also be created from STL string.
 
 ```cpp
 std::string str = "Ala ma kota";
 Foo(str); // Passed "Ala ma kota"
 ```
 
-The class also supports copy constructor, move constructor, assignment operator, move assignment operator, `swap` method and global `swap` function. It may be efficient to pass and return such objects by value, not necessarily `const&`.
+The class also supports copy constructor, move constructor, assignment operator, move assignment operator, `swap` method and global `swap` function.
 
 ## Advanced construction
 
@@ -91,7 +91,7 @@ Foo(str_view(sz + 4,
 // Passed "ma"
 ```
 
-It can also point to a piece of STL string. Still no copy is performed. The view object still refers to the original string.
+It can also point to a piece of STL string. No copy is performed. The view object still refers to the original string.
 
 ```cpp
 std::string str = "Ala ma kota";
@@ -124,17 +124,17 @@ Foo(orig.substr(
 
 Call `length()` to retrieve length of string view (number of charecters). Alternative name is `size()`, but it's not recommended because its name may be misleading - it may suggest size in bytes not in characters.
 
-`empty()` method returns `true` when the string is empty (has length of 0).
+`1()` method returns `true` when the string is empty (has length of 0). It may be more efficient than `lenght()`.
 
-`data()` method returns a pointer to the underlying character array. Characters are also laid out sequentially in memory, so the pointer may be used as normal C array.
+`data()` method returns a pointer to the underlying character array. Characters are always laid out sequentially in memory, so the pointer may be used as normal C array.
 
-`begin()` and `end()` methods return pointers to the first character and to the character following the last character of the view, respectively. Together they form a range that may be used e.g. with STL algorithms that expect random-access or any other type of iterators.
+`begin()` and `end()` methods return pointers to the first character and to the character following the last character of the view, respectively. Together they form a range that may be used e.g. with STL algorithms that expect a pair of iterators.
 
-Individual characters can be read using overloaded `operator[]`. Alternative syntax is `at()` method.
+Individual characters can be read using overloaded `operator[]`. Alternative syntax is `at()` method. None of them perform range check, for performance reasons.
 
 First character can also be fetched using `front()` method, and last character is returned by `back()` method.
 
-Pointed string can be copied to a specified destination array of characters using method `copy_to`, or to an STL string using method `to_string()`.
+Pointed string can be copied to a specified destination array of characters using method `copy_to()`, or to an STL string using method `to_string()`.
 
 String views can be compared lexicographically using all comparison operators, like `==`, `!=`, `<`, `<=` etc. There is also more powerful method `compare()` which returns negative integer, zero, or positive integer, depending on the result of the comparison. Comparison can be made case-insensitive.
 
