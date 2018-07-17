@@ -6,4 +6,7 @@
   <ItemGroup>
     <ClInclude Include="str_view.hpp" />
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="str_view.natvis" />
+  </ItemGroup>
 </Project>

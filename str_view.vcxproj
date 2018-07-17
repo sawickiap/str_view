@@ -24,6 +24,9 @@
   <ItemGroup>
     <ClCompile Include="Tests.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="str_view.natvis" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{450C022A-D412-4EDE-BA0D-EB7797F05901}</ProjectGuid>

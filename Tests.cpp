@@ -395,6 +395,21 @@ static void TestMultithreading()
     }
 }
 
+static void TestNatvis()
+{
+    string s = "Mateusz ma psy";
+
+    str_view fromNull = str_view(nullptr);
+    str_view fromSz = str_view("Ala ma kota");
+    str_view fromStl = str_view(s);
+
+    str_view fromSzSub = str_view(fromSz, 4, 2);
+    str_view fromStlSub = str_view(fromStl, 4, 2);
+
+    // Place breakpoint here and check in Visual Studio debugger whether natvis is working.
+    int DEBUG = 1;
+}
+
 int main()
 {
     TestBasicConstruction();
@@ -404,4 +419,5 @@ int main()
     TestZeroCharacter();
     TestOtherMethods();
     TestMultithreading();
+    TestNatvis();
 }
