@@ -130,6 +130,60 @@ static void TestOperators()
     str2 = returned.substr(1);
     TEST(str2 != str);
     TEST(!(str2 == str));
+
+    // Test comparisons
+    {
+        str_view empty = "";
+        str_view first = "A";
+        str_view second = "AA";
+        str_view third = "B";
+        str_view fourth = "a";
+
+        TEST(empty < first);
+        TEST(first < second);
+        TEST(second < third);
+        TEST(third < fourth);
+
+        TEST(empty <= first);
+        TEST(first <= second);
+        TEST(second <= third);
+        TEST(third <= fourth);
+
+        TEST(first > empty);
+        TEST(second > first);
+        TEST(third > second);
+        TEST(fourth > third);
+
+        TEST(first >= empty);
+        TEST(second >= first);
+        TEST(third >= second);
+        TEST(fourth >= third);
+
+        TEST(empty == empty);
+        TEST(first == first);
+        TEST(second == second);
+        TEST(third == third);
+        TEST(fourth == fourth);
+
+        TEST(empty <= empty);
+        TEST(first <= first);
+        TEST(second <= second);
+        TEST(third <= third);
+        TEST(fourth <= fourth);
+
+        TEST(empty >= empty);
+        TEST(first >= first);
+        TEST(second >= second);
+        TEST(third >= third);
+        TEST(fourth >= fourth);
+
+        TEST(!(empty != empty));
+        TEST(!(second != second));
+        TEST(empty != first);
+        TEST(first != second);
+        TEST(second != third);
+        TEST(third != fourth);
+    }
 }
 
 static void TestZeroCharacter()

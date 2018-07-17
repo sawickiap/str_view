@@ -13,6 +13,8 @@ inline size_t tstrlen(const char* sz) { return strlen(sz); }
 inline size_t tstrlen(const wchar_t* sz) { return wcslen(sz); }
 inline void tstrcpy(char* dst, size_t dstCapacity, const char* src) { strcpy_s(dst, dstCapacity, src); }
 inline void tstrcpy(wchar_t* dst, size_t dstCapacity, const wchar_t* src) { wcscpy_s(dst, dstCapacity, src); }
+inline int tstrncmp(const char* lhs, const char* rhs, size_t count) { return strncmp(lhs, rhs, count); }
+inline int tstrncmp(const wchar_t* lhs, const wchar_t* rhs, size_t count) { return wcsncmp(lhs, rhs, count); }
 
 template<typename CharT>
 class str_view_template
@@ -121,8 +123,21 @@ public:
 
     inline void to_string(StringT& dst) { dst.assign(begin(), end()); }
 
-    inline bool operator==(const str_view_template<CharT>& rhs) const;
-    inline bool operator!=(const str_view_template<CharT>& rhs) const { return !operator==(rhs); }
+    /*
+    Compares this with rhs lexicographically.
+    Returns negative value, 0, or positive value, depending on the result.
+    
+    Comparison is made using functions like strncmp, so they don't compare characters
+    past '\0' if it's present in the string.
+    */
+    inline int compare(const str_view_template<CharT>& rhs) const;
+
+    inline bool operator==(const str_view_template<CharT>& rhs) const { return compare(rhs) == 0; }
+    inline bool operator!=(const str_view_template<CharT>& rhs) const { return compare(rhs) != 0; }
+    inline bool operator< (const str_view_template<CharT>& rhs) const { return compare(rhs) <  0; }
+    inline bool operator> (const str_view_template<CharT>& rhs) const { return compare(rhs) >  0; }
+    inline bool operator<=(const str_view_template<CharT>& rhs) const { return compare(rhs) <= 0; }
+    inline bool operator>=(const str_view_template<CharT>& rhs) const { return compare(rhs) >= 0; }
 
 private:
     // SIZE_MAX means unknown.
@@ -378,17 +393,24 @@ inline str_view_template<CharT> str_view_template<CharT>::substr(size_t offset, 
 }
 
 template<typename CharT>
-inline bool str_view_template<CharT>::operator==(const str_view_template<CharT>& rhs) const
+inline int str_view_template<CharT>::compare(const str_view_template<CharT>& rhs) const
 {
-    const size_t thisLen = length();
-    if(thisLen != rhs.length())
-        return false;
-    if(thisLen > 0)
+    const size_t lhsLen = length();
+    const size_t rhsLen = rhs.length();
+    const size_t minLen = std::min(lhsLen, rhsLen);
+
+    if(minLen > 0)
     {
-        return memcmp(data(), rhs.data(), thisLen * sizeof(CharT)) == 0;
+        const int result = tstrncmp(data(), rhs.data(), minLen);
+        if(result != 0)
+            return result;
     }
-    return true;
-        
+
+    if(lhsLen < rhsLen)
+        return -1;
+    if(lhsLen > rhsLen)
+        return 1;
+    return 0;
 }
 
 template<typename CharT>
