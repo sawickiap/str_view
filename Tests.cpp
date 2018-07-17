@@ -330,6 +330,8 @@ static void TestOtherMethods()
         TEST(str_view("Ala ma kota").find_first_of(str_view("zm")) == 4);
         TEST(str_view("Ala ma kota").find_first_of(str_view("ZzXx")) == SIZE_MAX);
         TEST(str_view("Ala ma kota").find_first_of(str_view("a")) == 2);
+        TEST(str_view("").find_first_of("ABab") == SIZE_MAX);
+        TEST(str_view("Ala ma kota").find_first_of(str_view("ZzXxa"), 3) == 5);
     }
 
     // find_last_of
@@ -341,6 +343,26 @@ static void TestOtherMethods()
         TEST(str_view("Ala ma kota").find_last_of(str_view("zm")) == 4);
         TEST(str_view("Ala ma kota").find_last_of(str_view("ZzXx")) == SIZE_MAX);
         TEST(str_view("Ala ma kota").find_last_of(str_view("a")) == 10); // !
+    }
+
+    // find_first_not_of
+    {
+        TEST(str_view("Ala ma kota").find_first_not_of(str_view("Ala mkot")) == SIZE_MAX);
+        TEST(str_view("Ala ma kota").find_first_not_of(str_view("Z")) == 0);
+        TEST(str_view("Ala ma kota").find_first_not_of(str_view("Ala")) == 3);
+        TEST(str_view("Ala ma kota").find_first_not_of(str_view("ma "), 3) == 7);
+        TEST(str_view("Ala ma kota").find_first_not_of(str_view(nullptr)) == SIZE_MAX);
+        TEST(str_view(nullptr).find_first_not_of(str_view("Ala")) == SIZE_MAX);
+    }
+
+    // find_last_not_of
+    {
+        TEST(str_view("Ala ma kota").find_last_not_of(str_view("Ala mkot")) == SIZE_MAX);
+        TEST(str_view("Ala ma kota").find_last_not_of(str_view("Z")) == 10); // !
+        TEST(str_view("Ala ma kota").find_last_not_of(str_view("Ala")) == 9); // !
+        TEST(str_view("Ala ma kota").find_last_not_of(str_view("ma "), 9) == 9);
+        TEST(str_view("Ala ma kota").find_last_not_of(str_view("")) == SIZE_MAX);
+        TEST(str_view("").find_last_not_of(str_view("Ala")) == SIZE_MAX);
     }
 }
 

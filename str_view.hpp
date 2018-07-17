@@ -192,6 +192,21 @@ public:
     If chars is empty, returns SIZE_MAX.
     */
     inline size_t find_last_of(const str_view_template<CharT>& chars, size_t pos = SIZE_MAX) const;
+    /*
+    Finds the first character NOT equal to any of the characters in the given character sequence. 
+    pos - position at which to start the search.
+    Returns position of the first occurrence of any character not of the substring,
+    or SIZE_MAX if no such character is found.
+    If chars is empty, returns SIZE_MAX.
+    */
+    inline size_t find_first_not_of(const str_view_template<CharT>& chars, size_t pos = 0) const;
+    /*
+    Finds the last character NOT equal to one of characters in the given character sequence.
+    The search considers only the interval [0; pos].
+    If the character is not present in the interval, SIZE_MAX will be returned.
+    If chars is empty, returns SIZE_MAX.
+    */
+    inline size_t find_last_not_of(const str_view_template<CharT>& chars, size_t pos = SIZE_MAX) const;
 
 private:
     // SIZE_MAX means unknown.
@@ -620,6 +635,56 @@ inline size_t str_view_template<CharT>::find_last_of(const str_view_template<Cha
             if(m_Begin[thisIndex] == chars.m_Begin[charsIndex])
                 return thisIndex;
         }
+    }
+    return SIZE_MAX;
+}
+
+template<typename CharT>
+inline size_t str_view_template<CharT>::find_first_not_of(const str_view_template<CharT>& chars, size_t pos) const
+{
+    const size_t charsLen = chars.length();
+    if(charsLen == 0)
+        return SIZE_MAX;
+    const size_t thisLen = length();
+    for(size_t thisIndex = pos; thisIndex < thisLen; ++thisIndex)
+    {
+        bool found = false;
+        for(size_t charsIndex = 0; charsIndex < charsLen; ++charsIndex)
+        {
+            if(m_Begin[thisIndex] == chars.m_Begin[charsIndex])
+            {
+                found = true;
+                break;
+            }
+        }
+        if(!found)
+            return thisIndex;
+    }
+    return SIZE_MAX;
+}
+
+template<typename CharT>
+inline size_t str_view_template<CharT>::find_last_not_of(const str_view_template<CharT>& chars, size_t pos) const
+{
+    const size_t charsLen = chars.length();
+    if(charsLen == 0)
+        return SIZE_MAX;
+    const size_t thisLen = length();
+    if(thisLen == 0)
+        return SIZE_MAX;
+    for(size_t thisIndex = std::min(pos, thisLen - 1) + 1; thisIndex--; )
+    {
+        bool found = false;
+        for(size_t charsIndex = 0; charsIndex < charsLen; ++charsIndex)
+        {
+            if(m_Begin[thisIndex] == chars.m_Begin[charsIndex])
+            {
+                found = true;
+                break;
+            }
+        }
+        if(!found)
+            return thisIndex;
     }
     return SIZE_MAX;
 }
