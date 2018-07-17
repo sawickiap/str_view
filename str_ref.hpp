@@ -53,7 +53,7 @@ public:
 
     inline size_t length() const;
     inline size_t size() const { return length(); }
-    inline bool empty() const { return length() == 0; }
+    inline bool empty() const;
     inline const CharT* data() const { return m_Begin; }
     inline const CharT* begin() const { return m_Begin; }
     inline const CharT* front() const { return m_Begin; }
@@ -241,6 +241,20 @@ inline size_t str_ref_template<CharT>::length() const
         m_Length = len;
     }
     return len;
+}
+
+template<typename CharT>
+inline bool str_ref_template<CharT>::empty() const
+{
+    size_t len = m_Length;
+    if(len == SIZE_MAX)
+    {
+        // Length is unknown. String is null-terminated.
+        // We still don't need to know the length. We just peek first character.
+        assert(m_NullTerminatedPtr == 1);
+        return m_Begin == nullptr || *m_Begin == (CharT)0;
+    }
+    return len == 0;
 }
 
 template<typename CharT>

@@ -48,6 +48,7 @@ static void TestAdvancedConstruction()
 {
     const char* sz = "ABCDE";
     str_ref fromSz(sz);
+    TEST(!fromSz.empty());
     TEST(fromSz.length() == strlen(sz));
     TEST(strcmp(fromSz.c_str(), sz) == 0);
     // Make sure original null-terminated string is returned.
