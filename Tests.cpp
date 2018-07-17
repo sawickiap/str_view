@@ -139,6 +139,17 @@ static void TestZeroCharacter()
     TEST(memcmp(original, str.c_str(), 8) == 0);
 }
 
+static void TestOtherMethods()
+{
+    const char* orig = "ABC";
+    str_ref s1 = str_ref(orig);
+    
+    TEST(s1.begin() == orig);
+    TEST(s1.end() == orig + 3);
+    TEST(s1.front() == orig);
+    TEST(s1.back() == orig + 2);
+}
+
 static void TestMultithreading()
 {
     const char* original = "ABCDEF";
@@ -172,5 +183,6 @@ int main()
     TestCopying();
     TestOperators();
     TestZeroCharacter();
+    TestOtherMethods();
     TestMultithreading();
 }

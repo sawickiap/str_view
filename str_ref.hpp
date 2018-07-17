@@ -58,7 +58,7 @@ public:
     inline const CharT* begin() const { return m_Begin; }
     inline const CharT* front() const { return m_Begin; }
     inline const CharT* end() const { return m_Begin + length(); }
-    inline const CharT* back() const { return m_Begin + length(); }
+    inline const CharT* back() const { return m_Begin + (length() - 1); }
     inline CharT operator[](size_t index) const { return m_Begin[index]; }
     inline CharT at(size_t index) const { return m_Begin[index]; }
 
@@ -257,6 +257,8 @@ inline const CharT* str_ref_template<CharT>::c_str() const
     }
 	if(v == 0)
     {
+        // Not null terminated, so length must be known.
+        assert(m_Length != SIZE_MAX);
         CharT* nullTerminatedCopy = new CharT[m_Length + 1];
         assert(((uintptr_t)nullTerminatedCopy & 1) == 0); // Make sure allocated address is even.
 		memcpy(nullTerminatedCopy, begin(), m_Length * sizeof(CharT));
