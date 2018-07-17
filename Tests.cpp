@@ -320,6 +320,28 @@ static void TestOtherMethods()
         TEST(str_view("Ala Ala Ala").rfind("Ala") == 8);
         TEST(str_view("Ala Ala Ala").rfind("Ala", 7) == 4);
     }
+
+    // find_first_of
+    {
+        TEST(str_view("Ala ma kota").find_first_of(str_view(nullptr)) == SIZE_MAX);
+        TEST(str_view("Ala ma kota").find_first_of(str_view("Ala")) == 0);
+        TEST(str_view("Ala ma kota").find_first_of(str_view("maA")) == 0);
+        TEST(str_view("Ala ma kota").find_first_of(str_view("m")) == 4);
+        TEST(str_view("Ala ma kota").find_first_of(str_view("zm")) == 4);
+        TEST(str_view("Ala ma kota").find_first_of(str_view("ZzXx")) == SIZE_MAX);
+        TEST(str_view("Ala ma kota").find_first_of(str_view("a")) == 2);
+    }
+
+    // find_last_of
+    {
+        TEST(str_view("Ala ma kota").find_last_of(str_view(nullptr)) == SIZE_MAX);
+        TEST(str_view("Ala ma kota").find_last_of(str_view("A")) == 0);
+        TEST(str_view("Ala ma kota").find_last_of(str_view("maA")) == 10); // !
+        TEST(str_view("Ala ma kota").find_last_of(str_view("m")) == 4);
+        TEST(str_view("Ala ma kota").find_last_of(str_view("zm")) == 4);
+        TEST(str_view("Ala ma kota").find_last_of(str_view("ZzXx")) == SIZE_MAX);
+        TEST(str_view("Ala ma kota").find_last_of(str_view("a")) == 10); // !
+    }
 }
 
 static void TestMultithreading()
