@@ -15,6 +15,8 @@ inline void tstrcpy(char* dst, size_t dstCapacity, const char* src) { strcpy_s(d
 inline void tstrcpy(wchar_t* dst, size_t dstCapacity, const wchar_t* src) { wcscpy_s(dst, dstCapacity, src); }
 inline int tstrncmp(const char* lhs, const char* rhs, size_t count) { return strncmp(lhs, rhs, count); }
 inline int tstrncmp(const wchar_t* lhs, const wchar_t* rhs, size_t count) { return wcsncmp(lhs, rhs, count); }
+inline int tstrnicmp(const char* lhs, const char* rhs, size_t count) { return _strnicmp(lhs, rhs, count); }
+inline int tstrnicmp(const wchar_t* lhs, const wchar_t* rhs, size_t count) { return _wcsnicmp(lhs, rhs, count); }
 
 template<typename CharT>
 class str_view_template
@@ -130,7 +132,7 @@ public:
     Comparison is made using functions like strncmp, so they don't compare characters
     past '\0' if it's present in the string.
     */
-    inline int compare(const str_view_template<CharT>& rhs) const;
+    inline int compare(const str_view_template<CharT>& rhs, bool case_sensitive = true) const;
 
     inline bool operator==(const str_view_template<CharT>& rhs) const { return compare(rhs) == 0; }
     inline bool operator!=(const str_view_template<CharT>& rhs) const { return compare(rhs) != 0; }
@@ -145,8 +147,8 @@ public:
     If the string view is shorter than the prefix, returns false.
     If prefix is empty, returns true.
     */
-    inline bool starts_with(CharT prefix) const;
-    inline bool starts_with(const str_view_template<CharT>& prefix) const;
+    inline bool starts_with(CharT prefix, bool case_sensitive = true) const;
+    inline bool starts_with(const str_view_template<CharT>& prefix, bool case_sensitive = true) const;
 
     /*
     Checks if the string view ends with the given suffix.
@@ -154,8 +156,8 @@ public:
     If the string view is shorter than the suffix, returns false.
     If suffix is empty, returns true.
     */
-    inline bool ends_with(CharT suffix) const;
-    inline bool ends_with(const str_view_template<CharT>& suffix) const;
+    inline bool ends_with(CharT suffix, bool case_sensitive = true) const;
+    inline bool ends_with(const str_view_template<CharT>& suffix, bool case_sensitive = true) const;
 
 private:
     // SIZE_MAX means unknown.
@@ -411,7 +413,7 @@ inline str_view_template<CharT> str_view_template<CharT>::substr(size_t offset, 
 }
 
 template<typename CharT>
-inline int str_view_template<CharT>::compare(const str_view_template<CharT>& rhs) const
+inline int str_view_template<CharT>::compare(const str_view_template<CharT>& rhs, bool case_sensitive) const
 {
     const size_t lhsLen = length();
     const size_t rhsLen = rhs.length();
@@ -419,7 +421,9 @@ inline int str_view_template<CharT>::compare(const str_view_template<CharT>& rhs
 
     if(minLen > 0)
     {
-        const int result = tstrncmp(data(), rhs.data(), minLen);
+        const int result = case_sensitive ?
+            tstrncmp(data(), rhs.data(), minLen) :
+            tstrnicmp(data(), rhs.data(), minLen);
         if(result != 0)
             return result;
     }
@@ -432,33 +436,57 @@ inline int str_view_template<CharT>::compare(const str_view_template<CharT>& rhs
 }
 
 template<typename CharT>
-inline bool str_view_template<CharT>::starts_with(CharT prefix) const
+inline bool str_view_template<CharT>::starts_with(CharT prefix, bool case_sensitive) const
 {
-    return !empty() && front() == prefix;
+    if(!empty())
+    {
+        if(case_sensitive)
+            return *m_Begin == prefix;
+        return tstrnicmp(m_Begin, &prefix, 1) == 0;
+    }
+    return false;
 }
 
 template<typename CharT>
-inline bool str_view_template<CharT>::starts_with(const str_view_template<CharT>& prefix) const
+inline bool str_view_template<CharT>::starts_with(const str_view_template<CharT>& prefix, bool case_sensitive) const
 {
     const size_t prefixLen = prefix.length();
-    return length() >= prefixLen &&
-        tstrncmp(m_Begin, prefix.m_Begin, prefixLen) == 0;
+    if(length() >= prefixLen)
+    {
+        const int cmpResult = case_sensitive ?
+            tstrncmp(m_Begin, prefix.m_Begin, prefixLen) :
+            tstrnicmp(m_Begin, prefix.m_Begin, prefixLen);
+        return cmpResult == 0;
+    }
+    return false;
 }
 
 template<typename CharT>
-inline bool str_view_template<CharT>::ends_with(CharT suffix) const
+inline bool str_view_template<CharT>::ends_with(CharT suffix, bool case_sensitive) const
 {
     const size_t thisLen = length();
-    return thisLen > 0 && m_Begin[thisLen - 1] == suffix;
+    if(thisLen > 0)
+    {
+        if(case_sensitive)
+            return m_Begin[thisLen - 1] == suffix;
+        return tstrnicmp(m_Begin + (thisLen - 1), &suffix, 1) == 0;
+    }
+    return false;
 }
 
 template<typename CharT>
-inline bool str_view_template<CharT>::ends_with(const str_view_template<CharT>& suffix) const
+inline bool str_view_template<CharT>::ends_with(const str_view_template<CharT>& suffix, bool case_sensitive) const
 {
     const size_t thisLen = length();
     const size_t suffixLen = suffix.length();
-    return thisLen >= suffixLen &&
-        tstrncmp(m_Begin + (thisLen - suffixLen), suffix.m_Begin, suffixLen) == 0;
+    if(thisLen >= suffixLen)
+    {
+        const int cmpResult = case_sensitive ?
+            tstrncmp(m_Begin + (thisLen - suffixLen), suffix.m_Begin, suffixLen) :
+            tstrnicmp(m_Begin + (thisLen - suffixLen), suffix.m_Begin, suffixLen);
+        return cmpResult == 0;
+    }
+    return false;
 }
 
 template<typename CharT>

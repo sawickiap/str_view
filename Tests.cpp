@@ -238,6 +238,28 @@ static void TestOtherMethods()
         TEST(v1 == str_view(str));
     }
 
+    // comparison
+    {
+        TEST(str_view("AAA").compare(str_view("B")) < 0);
+        TEST(str_view("B").compare(str_view("AAA")) > 0);
+        TEST(str_view("abcd").compare(str_view("abcd")) == 0);
+        TEST(str_view("Z").compare(str_view("a")) < 0);
+        TEST(str_view("a").compare(str_view("Z")) > 0);
+        TEST(str_view("").compare(str_view("AAA")) < 0);
+        TEST(str_view("AAA").compare(str_view("")) > 0);
+        TEST(str_view("").compare(str_view(nullptr)) == 0);
+
+        // case-insensitive
+        TEST(str_view("AAA").compare(str_view("B"), false) < 0);
+        TEST(str_view("B").compare(str_view("AAA"), false) > 0);
+        TEST(str_view("abcd").compare(str_view("abcd"), false) == 0);
+        TEST(str_view("Z").compare(str_view("a"), false) > 0); // !
+        TEST(str_view("a").compare(str_view("Z"), false) < 0); // !
+        TEST(str_view("").compare(str_view("AAA"), false) < 0);
+        TEST(str_view("AAA").compare(str_view(""), false) > 0);
+        TEST(str_view("").compare(str_view(nullptr), false) == 0);
+    }
+
     // starts_with, ends_with
     {
         TEST(str_view("Ala ma kota").starts_with(str_view("Ala")));
@@ -253,7 +275,20 @@ static void TestOtherMethods()
         TEST(!str_view().ends_with(str_view("kota")));
         TEST(str_view("Ala ma kota").ends_with('a'));
         TEST(!str_view("Mateusz ma psy").ends_with('a'));
+
+        // case-insensitive
+        TEST(str_view("Ala ma kota").starts_with("ALA", false));
+        TEST(str_view("Ala ma kota").starts_with("ala", false));
+        TEST(!str_view("Mateusz ma psy").starts_with("Ala", false));
+        TEST(str_view("Ala ma kota").starts_with('a', false));
+        TEST(!str_view("Mateusz ma psy").starts_with('a', false));
+
+        TEST(str_view("Ala ma kota").ends_with("KOTA", false));
+        TEST(!str_view("Mateusz ma psy").ends_with("kota", false));
+        TEST(str_view("Ala ma kota").ends_with('A', false));
+        TEST(!str_view("Mateusz ma psy").ends_with('A', false));
     }
+
 }
 
 static void TestMultithreading()
