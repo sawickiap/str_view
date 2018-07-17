@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?> 
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
-  <Type Name="str_view_template&lt;*&gt;">
+  <Type Name="str_view_template&lt;char&gt;">
     <Intrinsic Name="size" Expression="m_Length._My_val" />
     <Intrinsic Name="data" Expression="m_Begin" />
     <DisplayString>{m_Begin,[m_Length._My_val]}</DisplayString>

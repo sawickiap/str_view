@@ -79,7 +79,7 @@ public:
     Returns a pointer to the underlying character array.
     The pointer is such that the range [data(); data() + length()) is valid and the values in it
     correspond to the values of the view. 
-    If empty() == true, returned pointer may or may not be null.
+    If empty() == true, returned pointer is undefined.
     */
     inline const CharT* data() const { return m_Begin; }
     /*

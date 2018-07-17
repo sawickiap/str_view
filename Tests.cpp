@@ -395,6 +395,36 @@ static void TestMultithreading()
     }
 }
 
+static void TestUnicode()
+{
+    wstr_view fromNull = wstr_view(nullptr);
+    TEST(fromNull.empty());
+    TEST(fromNull.length() == 0);
+    TEST(fromNull.size() == 0);
+    TEST(fromNull.begin() == fromNull.end());
+    TEST(fromNull == wstr_view(L""));
+    TEST(wcscmp(fromNull.c_str(), L"") == 0);
+
+    wstr_view fromSz = wstr_view(L"Ala ma kota");
+    TEST(!fromSz.empty());
+    TEST(fromSz.size() == 11);
+    TEST(fromSz.length() == 11);
+    TEST(*fromSz.begin() == L'A');
+    TEST(fromSz.back() == L'a');
+    TEST(fromSz == wstr_view(L"Ala ma kota"));
+    TEST(wcscmp(fromSz.c_str(), L"Ala ma kota") == 0);
+
+    wstring stl = L"Ala ma kota";
+    wstr_view fromStl = wstr_view(stl);
+    TEST(!fromStl.empty());
+    TEST(fromStl.size() == 11);
+    TEST(fromStl.length() == 11);
+    TEST(*fromStl.begin() == L'A');
+    TEST(fromStl.back() == L'a');
+    TEST(fromStl == wstr_view(L"Ala ma kota"));
+    TEST(wcscmp(fromStl.c_str(), L"Ala ma kota") == 0);
+}
+
 static void TestNatvis()
 {
     string s = "Mateusz ma psy";
@@ -405,6 +435,8 @@ static void TestNatvis()
 
     str_view fromSzSub = str_view(fromSz, 4, 2);
     str_view fromStlSub = str_view(fromStl, 4, 2);
+
+    wstr_view unicode = wstr_view(L"Ala ma kota Unicode");
 
     // Place breakpoint here and check in Visual Studio debugger whether natvis is working.
     int DEBUG = 1;
@@ -419,5 +451,6 @@ int main()
     TestZeroCharacter();
     TestOtherMethods();
     TestMultithreading();
+    TestUnicode();
     TestNatvis();
 }
