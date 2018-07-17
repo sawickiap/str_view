@@ -15,41 +15,41 @@ inline void tstrcpy(char* dst, size_t dstCapacity, const char* src) { strcpy_s(d
 inline void tstrcpy(wchar_t* dst, size_t dstCapacity, const wchar_t* src) { wcscpy_s(dst, dstCapacity, src); }
 
 template<typename CharT>
-class str_ref_template
+class str_view_template
 {
 public:
     typedef CharT CharT;
     typedef std::basic_string<CharT, std::char_traits<CharT>, std::allocator<CharT>> StringT;
 
     // Initializes to empty string.
-    inline str_ref_template();
+    inline str_view_template();
     
     // Initializes from a null-terminated string.
     // Null is acceptable. It means empty string.
-    inline str_ref_template(const CharT* sz);
+    inline str_view_template(const CharT* sz);
     // Initializes from not null-terminated string.
     // Null is acceptable if length is 0.
-    inline str_ref_template(const CharT* str, size_t length);
+    inline str_view_template(const CharT* str, size_t length);
     // Initializes from string with given length, with explicit statement that it is null-terminated.
     // Null is acceptable if length is 0.
     struct StillNullTerminated { };
-    inline str_ref_template(const CharT* str, size_t length, StillNullTerminated);
+    inline str_view_template(const CharT* str, size_t length, StillNullTerminated);
     
     // Initializes from an STL string.
     // length can exceed actual str.length(). It then spans to the end of str.
-    inline str_ref_template(const StringT& str, size_t offset = 0, size_t length = SIZE_MAX);
+    inline str_view_template(const StringT& str, size_t offset = 0, size_t length = SIZE_MAX);
 
     // Copy constructor.
-    inline str_ref_template(const str_ref_template<CharT>& src, size_t offset = 0, size_t length = SIZE_MAX);
+    inline str_view_template(const str_view_template<CharT>& src, size_t offset = 0, size_t length = SIZE_MAX);
     // Move constructor.
-    inline str_ref_template(str_ref_template<CharT>&& src);
+    inline str_view_template(str_view_template<CharT>&& src);
     
-    inline ~str_ref_template();
+    inline ~str_view_template();
 
     // Copy assignment operator.
-    inline str_ref_template<CharT>& operator=(const str_ref_template<CharT>& src);
+    inline str_view_template<CharT>& operator=(const str_view_template<CharT>& src);
     // Move assignment operator.
-    inline str_ref_template<CharT>& operator=(str_ref_template<CharT>&& src);
+    inline str_view_template<CharT>& operator=(str_view_template<CharT>&& src);
 
     /*
     Returns the number of characters in the view. 
@@ -100,9 +100,11 @@ public:
     // Possibly an internal copy.
     inline const CharT* c_str() const;
 
-    // Returns substring of this string.
-    // length can exceed actual length(). It then spans to the end of this string.
-    inline str_ref_template<CharT> substr(size_t offset = 0, size_t length = SIZE_MAX);
+    /*
+    Returns a view of the substring [offset, offset + length).
+    length can exceed actual length(). It then spans to the end of this string.
+    */
+    inline str_view_template<CharT> substr(size_t offset = 0, size_t length = SIZE_MAX);
 
     /*
     Copies the substring [offset, offset + length) to the character string pointed to by dst.
@@ -114,15 +116,8 @@ public:
 
     inline void to_string(StringT& dst) { dst.assign(begin(), end()); }
 
-    /* TODO:
-    swap
-    operator< > etc.
-    starts_with, ends_with
-    comarison case-insensitive
-    */
-
-    inline bool operator==(const str_ref_template<CharT>& rhs) const;
-    inline bool operator!=(const str_ref_template<CharT>& rhs) const { return !operator==(rhs); }
+    inline bool operator==(const str_view_template<CharT>& rhs) const;
+    inline bool operator!=(const str_view_template<CharT>& rhs) const { return !operator==(rhs); }
 
 private:
     // SIZE_MAX means unknown.
@@ -133,11 +128,11 @@ private:
     mutable std::atomic<uintptr_t> m_NullTerminatedPtr;
 };
 
-typedef str_ref_template<char> str_ref;
-typedef str_ref_template<wchar_t> wstr_ref;
+typedef str_view_template<char> str_view;
+typedef str_view_template<wchar_t> wstr_view;
 
 template<typename CharT>
-inline str_ref_template<CharT>::str_ref_template() :
+inline str_view_template<CharT>::str_view_template() :
 	m_Length(0),
 	m_Begin(nullptr),
 	m_NullTerminatedPtr(0)
@@ -145,7 +140,7 @@ inline str_ref_template<CharT>::str_ref_template() :
 }
 
 template<typename CharT>
-inline str_ref_template<CharT>::str_ref_template(const CharT* sz) :
+inline str_view_template<CharT>::str_view_template(const CharT* sz) :
 	m_Length(sz ? SIZE_MAX : 0),
 	m_Begin(sz),
 	m_NullTerminatedPtr(sz ? 1 : 0)
@@ -153,7 +148,7 @@ inline str_ref_template<CharT>::str_ref_template(const CharT* sz) :
 }
 
 template<typename CharT>
-inline str_ref_template<CharT>::str_ref_template(const CharT* str, size_t length) :
+inline str_view_template<CharT>::str_view_template(const CharT* str, size_t length) :
 	m_Length(length),
 	m_Begin(length ? str : nullptr),
 	m_NullTerminatedPtr(0)
@@ -161,7 +156,7 @@ inline str_ref_template<CharT>::str_ref_template(const CharT* str, size_t length
 }
 
 template<typename CharT>
-inline str_ref_template<CharT>::str_ref_template(const CharT* str, size_t length, StillNullTerminated) :
+inline str_view_template<CharT>::str_view_template(const CharT* str, size_t length, StillNullTerminated) :
 	m_Length(length),
 	m_Begin(nullptr),
 	m_NullTerminatedPtr(0)
@@ -175,7 +170,7 @@ inline str_ref_template<CharT>::str_ref_template(const CharT* str, size_t length
 }
 
 template<typename CharT>
-inline str_ref_template<CharT>::str_ref_template(const StringT& str, size_t offset, size_t length) :
+inline str_view_template<CharT>::str_view_template(const StringT& str, size_t offset, size_t length) :
 	m_Length(0),
 	m_Begin(nullptr),
 	m_NullTerminatedPtr(0)
@@ -195,7 +190,7 @@ inline str_ref_template<CharT>::str_ref_template(const StringT& str, size_t offs
 }
 
 template<typename CharT>
-inline str_ref_template<CharT>::str_ref_template(const str_ref_template<CharT>& src, size_t offset, size_t length) :
+inline str_view_template<CharT>::str_view_template(const str_view_template<CharT>& src, size_t offset, size_t length) :
 	m_Length(0),
 	m_Begin(nullptr),
 	m_NullTerminatedPtr(0)
@@ -223,7 +218,7 @@ inline str_ref_template<CharT>::str_ref_template(const str_ref_template<CharT>& 
 }
 
 template<typename CharT>
-inline str_ref_template<CharT>::str_ref_template(str_ref_template<CharT>&& src) :
+inline str_view_template<CharT>::str_view_template(str_view_template<CharT>&& src) :
 	m_Length(src.m_Length.exchange(0)),
 	m_Begin(src.m_Begin),
 	m_NullTerminatedPtr(src.m_NullTerminatedPtr.exchange(0))
@@ -232,7 +227,7 @@ inline str_ref_template<CharT>::str_ref_template(str_ref_template<CharT>&& src) 
 }
 
 template<typename CharT>
-inline str_ref_template<CharT>::~str_ref_template()
+inline str_view_template<CharT>::~str_view_template()
 {
     uintptr_t v = m_NullTerminatedPtr;
 	if(v > 1)
@@ -240,7 +235,7 @@ inline str_ref_template<CharT>::~str_ref_template()
 }
 
 template<typename CharT>
-inline str_ref_template<CharT>& str_ref_template<CharT>::operator=(const str_ref_template<CharT>& src)
+inline str_view_template<CharT>& str_view_template<CharT>::operator=(const str_view_template<CharT>& src)
 {
 	if(&src != this)
     {
@@ -255,7 +250,7 @@ inline str_ref_template<CharT>& str_ref_template<CharT>::operator=(const str_ref
 }
 
 template<typename CharT>
-inline str_ref_template<CharT>& str_ref_template<CharT>::operator=(str_ref_template<CharT>&& src)
+inline str_view_template<CharT>& str_view_template<CharT>::operator=(str_view_template<CharT>&& src)
 {
 	if(&src != this)
     {
@@ -271,7 +266,7 @@ inline str_ref_template<CharT>& str_ref_template<CharT>::operator=(str_ref_templ
 }
 
 template<typename CharT>
-inline size_t str_ref_template<CharT>::length() const
+inline size_t str_view_template<CharT>::length() const
 {
     size_t len = m_Length;
     if(len == SIZE_MAX)
@@ -286,7 +281,7 @@ inline size_t str_ref_template<CharT>::length() const
 }
 
 template<typename CharT>
-inline bool str_ref_template<CharT>::empty() const
+inline bool str_view_template<CharT>::empty() const
 {
     size_t len = m_Length;
     if(len == SIZE_MAX)
@@ -300,7 +295,7 @@ inline bool str_ref_template<CharT>::empty() const
 }
 
 template<typename CharT>
-inline const CharT* str_ref_template<CharT>::c_str() const
+inline const CharT* str_view_template<CharT>::c_str() const
 {
     static const CharT nullChar = (CharT)0;
 	if(empty())
@@ -334,7 +329,7 @@ inline const CharT* str_ref_template<CharT>::c_str() const
 }
 
 template<typename CharT>
-inline size_t str_ref_template<CharT>::copy_to(CharT* dst, size_t offset, size_t length)
+inline size_t str_view_template<CharT>::copy_to(CharT* dst, size_t offset, size_t length)
 {
     const size_t thisLen = this->length();
     assert(offset <= thisLen);
@@ -344,13 +339,13 @@ inline size_t str_ref_template<CharT>::copy_to(CharT* dst, size_t offset, size_t
 }
 
 template<typename CharT>
-inline str_ref_template<CharT> str_ref_template<CharT>::substr(size_t offset, size_t length)
+inline str_view_template<CharT> str_view_template<CharT>::substr(size_t offset, size_t length)
 {
     // Length can remain unknown.
     if(m_Length == SIZE_MAX && length == SIZE_MAX)
     {
         assert(m_NullTerminatedPtr == 1);
-        return str_ref_template<CharT>(m_Begin + offset);
+        return str_view_template<CharT>(m_Begin + offset);
     }
 
     const size_t thisLen = this->length();
@@ -358,13 +353,13 @@ inline str_ref_template<CharT> str_ref_template<CharT>::substr(size_t offset, si
 	length = std::min(length, thisLen - offset);
 	// Result will be null-terminated.
 	if(m_NullTerminatedPtr == 1 && length == thisLen - offset)
-		return str_ref_template<CharT>(m_Begin + offset, length, StillNullTerminated());
+		return str_view_template<CharT>(m_Begin + offset, length, StillNullTerminated());
 	// Result will not be null-terminated.
-	return str_ref_template<CharT>(m_Begin + offset, length);
+	return str_view_template<CharT>(m_Begin + offset, length);
 }
 
 template<typename CharT>
-inline bool str_ref_template<CharT>::operator==(const str_ref_template<CharT>& rhs) const
+inline bool str_view_template<CharT>::operator==(const str_view_template<CharT>& rhs) const
 {
     const size_t thisLen = length();
     if(thisLen != rhs.length())
