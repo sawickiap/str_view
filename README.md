@@ -1,5 +1,5 @@
 # str_ref
 
-String-view class for C++ with a twist.
+Null-termination-aware string-view class for C++.
 
 TBD
