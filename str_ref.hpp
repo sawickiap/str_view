@@ -51,13 +51,47 @@ public:
     // Move assignment operator.
     inline str_ref_template<CharT>& operator=(str_ref_template<CharT>&& src);
 
+    /*
+    Returns the number of characters in the view. 
+    */
     inline size_t length() const;
+    /*
+    Returns the number of characters in the view. 
+    Usage of this method is not recommended because its name may be misleading -
+    it may suggest size in bytes not in characters.
+    */
     inline size_t size() const { return length(); }
+    /*
+    Checks if the view has no characters, i.e. whether length() == 0.
+    It may be more efficient than checking length().
+    */
     inline bool empty() const;
+    /*
+    Returns a pointer to the underlying character array.
+    The pointer is such that the range [data(); data() + length()) is valid and the values in it
+    correspond to the values of the view. 
+    If empty() == true, returned pointer may or may not be null.
+    */
     inline const CharT* data() const { return m_Begin; }
+    /*
+    Returns an iterator to the first character of the view.
+    If empty() == true, returned pointer may or may not be null, but always begin() == end().
+    */
     inline const CharT* begin() const { return m_Begin; }
-    inline const CharT* front() const { return m_Begin; }
+    /*
+    Returns an iterator to the character following the last character of the view.
+    This character acts as a placeholder, attempting to access it results in undefined behavior. 
+    */
     inline const CharT* end() const { return m_Begin + length(); }
+    /*
+    Returns reference to the first character in the view.
+    The behavior is undefined if empty() == true.
+    */
+    inline const CharT* front() const { return m_Begin; }
+    /*
+    Returns reference to the last character in the view.
+    The behavior is undefined if empty() == true. 
+    */
     inline const CharT* back() const { return m_Begin + (length() - 1); }
     inline CharT operator[](size_t index) const { return m_Begin[index]; }
     inline CharT at(size_t index) const { return m_Begin[index]; }
@@ -69,6 +103,14 @@ public:
     // Returns substring of this string.
     // length can exceed actual length(). It then spans to the end of this string.
     inline str_ref_template<CharT> substr(size_t offset = 0, size_t length = SIZE_MAX);
+
+    /*
+    Copies the substring [offset, offset + length) to the character string pointed to by dst.
+    If pointer string ends before length is reached, string is copied to the end.
+    Null character is not added past the end of destination.
+    Returns number of characters copied.
+    */
+    inline size_t copy_to(CharT* dst, size_t offset = 0, size_t length = SIZE_MAX);
 
     inline void to_string(StringT& dst) { dst.assign(begin(), end()); }
 
@@ -289,6 +331,16 @@ inline const CharT* str_ref_template<CharT>::c_str() const
         }
     }
 	return (const CharT*)v;
+}
+
+template<typename CharT>
+inline size_t str_ref_template<CharT>::copy_to(CharT* dst, size_t offset, size_t length)
+{
+    const size_t thisLen = this->length();
+    assert(offset <= thisLen);
+    length = std::min(length, thisLen - offset);
+    memcpy(dst, m_Begin + offset, length * sizeof(CharT));
+    return length;
 }
 
 template<typename CharT>

@@ -142,13 +142,32 @@ static void TestZeroCharacter()
 
 static void TestOtherMethods()
 {
-    const char* orig = "ABC";
-    str_ref s1 = str_ref(orig);
+    // begin, end, front, back
+    {
+        const char* orig = "ABC";
+        str_ref s1 = str_ref(orig);
     
-    TEST(s1.begin() == orig);
-    TEST(s1.end() == orig + 3);
-    TEST(s1.front() == orig);
-    TEST(s1.back() == orig + 2);
+        TEST(s1.begin() == orig);
+        TEST(s1.end() == orig + 3);
+        TEST(s1.front() == orig);
+        TEST(s1.back() == orig + 2);
+    }
+
+    // copy_to
+    {
+        const char* orig = "ABCDEF";
+        str_ref s1 = str_ref(orig);
+
+        char dst[6];
+        s1.copy_to(dst);
+        TEST(memcmp(orig, dst, 6) == 0);
+
+        s1.copy_to(dst, 3);
+        TEST(memcmp(orig + 3, dst, 3) == 0);
+
+        s1.copy_to(dst, 0, 4);
+        TEST(memcmp(orig, dst, 4) == 0);
+    }
 }
 
 static void TestMultithreading()
