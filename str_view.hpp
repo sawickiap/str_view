@@ -91,15 +91,15 @@ public:
     */
     inline const CharT* end() const { return m_Begin + length(); }
     /*
-    Returns reference to the first character in the view.
+    Returns first character in the view.
     The behavior is undefined if empty() == true.
     */
-    inline const CharT* front() const { return m_Begin; }
+    inline const CharT front() const { return *m_Begin; }
     /*
-    Returns reference to the last character in the view.
+    Returns last character in the view.
     The behavior is undefined if empty() == true. 
     */
-    inline const CharT* back() const { return m_Begin + (length() - 1); }
+    inline const CharT back() const { return m_Begin[length() - 1]; }
     inline CharT operator[](size_t index) const { return m_Begin[index]; }
     inline CharT at(size_t index) const { return m_Begin[index]; }
 
@@ -138,6 +138,24 @@ public:
     inline bool operator> (const str_view_template<CharT>& rhs) const { return compare(rhs) >  0; }
     inline bool operator<=(const str_view_template<CharT>& rhs) const { return compare(rhs) <= 0; }
     inline bool operator>=(const str_view_template<CharT>& rhs) const { return compare(rhs) >= 0; }
+
+    /*
+    Checks if the string view begins with the given prefix.
+
+    If the string view is shorter than the prefix, returns false.
+    If prefix is empty, returns true.
+    */
+    inline bool starts_with(CharT prefix) const;
+    inline bool starts_with(const str_view_template<CharT>& prefix) const;
+
+    /*
+    Checks if the string view ends with the given suffix.
+
+    If the string view is shorter than the suffix, returns false.
+    If suffix is empty, returns true.
+    */
+    inline bool ends_with(CharT suffix) const;
+    inline bool ends_with(const str_view_template<CharT>& suffix) const;
 
 private:
     // SIZE_MAX means unknown.
@@ -411,6 +429,36 @@ inline int str_view_template<CharT>::compare(const str_view_template<CharT>& rhs
     if(lhsLen > rhsLen)
         return 1;
     return 0;
+}
+
+template<typename CharT>
+inline bool str_view_template<CharT>::starts_with(CharT prefix) const
+{
+    return !empty() && front() == prefix;
+}
+
+template<typename CharT>
+inline bool str_view_template<CharT>::starts_with(const str_view_template<CharT>& prefix) const
+{
+    const size_t prefixLen = prefix.length();
+    return length() >= prefixLen &&
+        tstrncmp(m_Begin, prefix.m_Begin, prefixLen) == 0;
+}
+
+template<typename CharT>
+inline bool str_view_template<CharT>::ends_with(CharT suffix) const
+{
+    const size_t thisLen = length();
+    return thisLen > 0 && m_Begin[thisLen - 1] == suffix;
+}
+
+template<typename CharT>
+inline bool str_view_template<CharT>::ends_with(const str_view_template<CharT>& suffix) const
+{
+    const size_t thisLen = length();
+    const size_t suffixLen = suffix.length();
+    return thisLen >= suffixLen &&
+        tstrncmp(m_Begin + (thisLen - suffixLen), suffix.m_Begin, suffixLen) == 0;
 }
 
 template<typename CharT>

@@ -203,8 +203,8 @@ static void TestOtherMethods()
     
         TEST(s1.begin() == orig);
         TEST(s1.end() == orig + 3);
-        TEST(s1.front() == orig);
-        TEST(s1.back() == orig + 2);
+        TEST(s1.front() == 'A');
+        TEST(s1.back() == 'C');
     }
 
     // copy_to
@@ -236,6 +236,23 @@ static void TestOtherMethods()
         
         TEST(v2 == str_view(origSz));
         TEST(v1 == str_view(str));
+    }
+
+    // starts_with, ends_with
+    {
+        TEST(str_view("Ala ma kota").starts_with(str_view("Ala")));
+        TEST(!str_view("Mateusz ma psy").starts_with(str_view("Ala")));
+        TEST(str_view("Ala ma kota").starts_with(str_view()));
+        TEST(!str_view().starts_with(str_view("Ala")));
+        TEST(str_view("Ala ma kota").starts_with('A'));
+        TEST(!str_view("Mateusz ma psy").starts_with('A'));
+
+        TEST(str_view("Ala ma kota").ends_with(str_view("kota")));
+        TEST(!str_view("Mateusz ma psy").ends_with(str_view("kota")));
+        TEST(str_view("Ala ma kota").ends_with(str_view()));
+        TEST(!str_view().ends_with(str_view("kota")));
+        TEST(str_view("Ala ma kota").ends_with('a'));
+        TEST(!str_view("Mateusz ma psy").ends_with('a'));
     }
 }
 
