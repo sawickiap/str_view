@@ -289,6 +289,37 @@ static void TestOtherMethods()
         TEST(!str_view("Mateusz ma psy").ends_with('A', false));
     }
 
+    // find
+    {
+        TEST(str_view("Ala ma kota").find("Ala") == 0);
+        TEST(str_view("Ala ma kota").find("ma") == 4);
+        TEST(str_view("Ala ma kota").find("kota") == 7);
+        TEST(str_view("Ala ma kota").find("psy") == SIZE_MAX);
+        TEST(str_view("Ala ma kota").find("") == 0);
+        TEST(str_view("Ala ma kota").find("", 2) == 2);
+        TEST(str_view("Ala ma kota").find("a", 4) == 5);
+        TEST(str_view("Ala ma kota").find('A') == 0);
+        TEST(str_view("Ala ma kota").find('Z') == SIZE_MAX);
+        TEST(str_view("Ala ma kota").find('a', 4) == 5);
+        TEST(str_view("Ala Ala Ala").find("Ala") == 0);
+        TEST(str_view("Ala Ala Ala").find("Ala", 1) == 4);
+    }
+
+    // rfind
+    {
+        TEST(str_view("Ala ma kota").rfind("Ala") == 0);
+        TEST(str_view("Ala ma kota").rfind("ma") == 4);
+        TEST(str_view("Ala ma kota").rfind("kota") == 7);
+        TEST(str_view("Ala ma kota").rfind("psy") == SIZE_MAX);
+        TEST(str_view("Ala ma kota").rfind("", 2) == 2);
+        TEST(str_view("Ala ma kota").rfind("a", 4) == 2);
+        TEST(str_view("Ala ma kota").rfind('A') == 0);
+        TEST(str_view("Ala ma kota").rfind('a') == 10);
+        TEST(str_view("Ala ma kota").rfind('Z') == SIZE_MAX);
+        TEST(str_view("Ala ma kota").rfind('a', 4) == 2);
+        TEST(str_view("Ala Ala Ala").rfind("Ala") == 8);
+        TEST(str_view("Ala Ala Ala").rfind("Ala", 7) == 4);
+    }
 }
 
 static void TestMultithreading()

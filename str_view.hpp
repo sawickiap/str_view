@@ -159,6 +159,24 @@ public:
     inline bool ends_with(CharT suffix, bool case_sensitive = true) const;
     inline bool ends_with(const str_view_template<CharT>& suffix, bool case_sensitive = true) const;
 
+    /*
+    Finds the first substring equal to the given character sequence.
+    pos - position at which to start the search.
+    Returns position of the first character of the found substring, or SIZE_MAX if no such substring is found.
+    If substr is empty, returns pos.
+    */
+    inline size_t find(CharT ch, size_t pos = 0) const;
+    inline size_t find(const str_view_template<CharT>& substr, size_t pos = 0) const;
+
+    /*
+    Finds the last substring equal to the given character sequence.
+    pos - position at which to start the search.
+    Returns position of the first character of the found substring, or SIZE_MAX if no such substring is found.
+    If substr is empty, returns pos.
+    */
+    inline size_t rfind(CharT ch, size_t pos = SIZE_MAX) const;
+    inline size_t rfind(const str_view_template<CharT>& substr, size_t pos = SIZE_MAX) const;
+
 private:
     // SIZE_MAX means unknown.
     mutable std::atomic<size_t> m_Length;
@@ -487,6 +505,69 @@ inline bool str_view_template<CharT>::ends_with(const str_view_template<CharT>& 
         return cmpResult == 0;
     }
     return false;
+}
+
+template<typename CharT>
+inline size_t str_view_template<CharT>::find(CharT ch, size_t pos) const
+{
+    const size_t thisLen = length();
+    if(thisLen == 0)
+        return SIZE_MAX;
+    for(size_t i = pos; i < thisLen; ++i)
+    {
+        if(m_Begin[i] == ch)
+            return i;
+    }
+    return SIZE_MAX;
+}
+
+template<typename CharT>
+inline size_t str_view_template<CharT>::find(const str_view_template<CharT>& substr, size_t pos) const
+{
+    const size_t subLen = substr.length();
+    if(subLen == 0)
+        return pos;
+    const size_t thisLen = length();
+    if(thisLen < subLen)
+        return SIZE_MAX;
+    const size_t maxPos = thisLen - subLen;
+    for(size_t i = pos; i <= maxPos; ++i)
+    {
+        if(memcmp(m_Begin + i, substr.m_Begin, subLen * sizeof(CharT)) == 0)
+            return i;
+    }
+    return SIZE_MAX;
+}
+
+template<typename CharT>
+inline size_t str_view_template<CharT>::rfind(CharT ch, size_t pos) const
+{
+    const size_t thisLen = length();
+    if(thisLen == 0)
+        return SIZE_MAX;
+    for(size_t i = std::min(pos, thisLen - 1) + 1; i--; )
+    {
+        if(m_Begin[i] == ch)
+            return i;
+    }
+    return SIZE_MAX;
+}
+
+template<typename CharT>
+inline size_t str_view_template<CharT>::rfind(const str_view_template<CharT>& substr, size_t pos) const
+{
+    const size_t subLen = substr.length();
+    if(subLen == 0)
+        return pos;
+    const size_t thisLen = length();
+    if(thisLen < subLen)
+        return SIZE_MAX;
+    for(size_t i = std::min(pos, thisLen - subLen) + 1; i--; )
+    {
+        if(memcmp(m_Begin + i, substr.m_Begin, subLen * sizeof(CharT)) == 0)
+            return i;
+    }
+    return SIZE_MAX;
 }
 
 template<typename CharT>
