@@ -168,6 +168,21 @@ static void TestOtherMethods()
         s1.copy_to(dst, 0, 4);
         TEST(memcmp(orig, dst, 4) == 0);
     }
+
+    // swap
+    {
+        const char* origSz = "ABCD";
+        const string str = "EFG";
+
+        str_view v1 = str_view(origSz);
+        str_view v2 = str_view(str);
+        
+        using std::swap;
+        swap(v1, v2);
+        
+        TEST(v2 == str_view(origSz));
+        TEST(v1 == str_view(str));
+    }
 }
 
 static void TestMultithreading()

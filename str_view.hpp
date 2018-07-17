@@ -52,6 +52,11 @@ public:
     inline str_view_template<CharT>& operator=(str_view_template<CharT>&& src);
 
     /*
+    Exchanges the view with that of rhs.
+    */
+    inline void swap(str_view_template<CharT>& rhs) noexcept;
+
+    /*
     Returns the number of characters in the view. 
     */
     inline size_t length() const;
@@ -266,6 +271,20 @@ inline str_view_template<CharT>& str_view_template<CharT>::operator=(str_view_te
 }
 
 template<typename CharT>
+inline void str_view_template<CharT>::swap(str_view_template<CharT>& rhs) noexcept
+{
+    const size_t rhsLength = rhs.m_Length.load();
+    const size_t lhsLength = m_Length.exchange(rhsLength);
+    rhs.m_Length.store(lhsLength);
+
+    std::swap(m_Begin, rhs.m_Begin);
+
+    const uintptr_t rhsNullTerminatedPtr = rhs.m_NullTerminatedPtr.load();
+    const uintptr_t lhsNullTerminatedPtr = m_NullTerminatedPtr.exchange(rhsNullTerminatedPtr);
+    rhs.m_NullTerminatedPtr.store(lhsNullTerminatedPtr);
+}
+
+template<typename CharT>
 inline size_t str_view_template<CharT>::length() const
 {
     size_t len = m_Length;
@@ -370,4 +389,10 @@ inline bool str_view_template<CharT>::operator==(const str_view_template<CharT>&
     }
     return true;
         
+}
+
+template<typename CharT>
+inline void swap(str_view_template<CharT>& lhs, str_view_template<CharT>& rhs)
+{
+    lhs.swap(rhs);
 }
