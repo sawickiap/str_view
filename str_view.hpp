@@ -102,6 +102,7 @@ public:
     The behavior is undefined if empty() == true. 
     */
     inline const CharT back() const { return m_Begin[length() - 1]; }
+    
     inline CharT operator[](size_t index) const { return m_Begin[index]; }
     inline CharT at(size_t index) const { return m_Begin[index]; }
 
