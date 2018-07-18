@@ -123,6 +123,12 @@ static void TestOperators()
     str.to_string(returned);
     TEST(returned == original);
 
+    string returned2;
+    str.to_string(returned2, 1, 3);
+    TEST(returned2 == "BCD");
+    str.to_string(returned2, 3);
+    TEST(returned2 == "DEF");
+
     // Test operator== and operator!=
     str_view str2 = returned;
     TEST(str2 == str);
@@ -442,6 +448,163 @@ static void TestNatvis()
     int DEBUG = 1;
 }
 
+void Foo1(const str_view& v)
+{
+    printf("String is: %s\n", v.c_str());
+}
+
+static void TestDocumentationSamples()
+{
+    // Basic construction
+
+    Foo1(str_view()); // Passed ""
+
+    Foo1("Ala ma kota"); // Passed "Ala ma kota"
+
+    {
+        char sz[32];
+        sprintf_s(sz, "Number is %i", 7);
+        Foo1(sz); // Passed "Number is 7"
+    }
+
+    {
+        std::string str = "Ala ma kota";
+        Foo1(str); // Passed "Ala ma kota"
+    }
+
+    // Advanced construction
+
+    Foo1(str_view(nullptr)); // Passed ""
+
+    {
+        char array[4] = { 'A', 'B', 'C', 'D' };
+        Foo1(str_view(array,
+            4)); // length
+        // Passed "ABCD"
+    }
+
+    {
+        const char* sz = "Ala ma kota";
+        Foo1(str_view(sz + 4,
+            2)); // length
+        // Passed "ma"
+    }
+
+    {
+        std::string str = "Ala ma kota";
+        Foo1(str_view(str,
+            4, // offset
+            2)); // length
+        // Passed "ma"
+    }
+
+    {
+        str_view orig = "Ala ma kota";
+        Foo1(orig.substr(
+            4)); // offset
+        // Passed "ma kota" - substring from offset 4 to the end.
+        Foo1(orig.substr(
+            0, // offset
+            3)); // length
+        // Passed "Ala" - substring limited to 3 characters.
+        Foo1(orig.substr(
+            4, // offset
+            2)); // length
+        // Passed "ma"
+    }
+
+    // Using string view
+
+    {
+        str_view v1 = str_view("aaa");
+        str_view v2 = str_view("BBB");
+        int r = v1.compare(v2,
+            false); // case_sensitive
+        // r is -1 because v1 goes before v2 when compared in case-insensitive way.
+        printf("r = %i\n", r);
+    }
+
+    {
+        str_view v = str_view("Ala ma kota");
+        // Prints "Ala ma kota"
+        for(char ch : v)
+            printf("%c", ch);
+    }
+    printf("\n");
+
+    {
+        str_view v = str_view("Ala ma kota");
+        str_view sub_v = v.substr(4, 2);
+        printf("sub_v is: %s\n", sub_v.c_str()); // Prints "sub_v is: ma"
+    }
+
+    // Performance
+    // Use debugger to confirm described behavior.
+
+    {
+        const char* sz = "Ala ma kota";
+        str_view v = str_view(sz);
+
+        // empty() peeks only first character. Length still unknown.
+        printf("Empty: %s\n", v.empty() ? "true" : "false"); // Prints "Empty: false"
+        // length() calculates length on first call.
+        printf("Length: %zu\n", v.length()); // Prints "Length: 11"
+        // c_str() trivially returns original pointer.
+        printf("String is: %s\n", v.c_str()); // Prints "Ala ma kota"
+    }
+
+    {
+        std::string s = "Ala ma kota";
+        str_view v = str_view(s);
+
+        // c_str() returns pointer returned from original s.c_str().
+        printf("String is: %s\n", v.c_str());
+        // Length is explicitly known from s, so empty() trivially checks if it's not 0.
+        printf("Empty: %s\n", v.empty() ? "true" : "false");
+        // Length is explicitly known from s, so length() trivially returns it.
+        printf("Length: %zu\n", v.length());
+    }
+
+    {
+        const char* sz = "Ala ma kota";
+        str_view v = str_view(sz + 4, 2);
+
+        // c_str() creates and returns local, null-terminated copy.
+        printf("String is: %s\n", v.c_str()); // Prints "ma"
+        // Length is explicitly known, so empty() trivially checks if it's not 0.
+        printf("Empty: %s\n", v.empty() ? "true" : "false"); // Prints "Empty: false"
+        // Length is explicitly known, so length() trivially returns it.
+        printf("Length: %zu\n", v.length()); // Prints "Length: 2"
+    }
+
+    {
+        str_view vFull = str_view("Ala ma kota");
+        str_view vBegin = vFull.substr(
+            0, // offset
+            3); // length
+
+        // Substring is not null-terminated. c_str() creates and returns local, null-terminated copy.
+        printf("String is: %s\n", vBegin.c_str()); // Prints "Ala"
+        // Length is explicitly known, so empty() trivially checks if it's not 0.
+        printf("Empty: %s\n", vBegin.empty() ? "true" : "false"); // Prints "Empty: false"
+        // Length is explicitly known, so length() trivially returns it.
+        printf("Length: %zu\n", vBegin.length()); // Prints "Length: 3"
+    }
+
+    {
+        str_view vFull = str_view("Ala ma kota");
+        str_view vEnd = vFull.substr(
+            7); // offset
+
+        // Substring is null-terminated. c_str() returns original pointer, adjusted by offset.
+        printf("String is: %s\n", vEnd.c_str()); // Prints "kota"
+        // Length is still unknown. empty() peeks only first character.
+        printf("Empty: %s\n", vEnd.empty() ? "true" : "false"); // Prints "Empty: false"
+        // length() calculates length on first call.
+        printf("Length: %zu\n", vEnd.length()); // Prints "Length: 4"
+    }
+}
+
 int main()
 {
     TestBasicConstruction();
@@ -453,4 +616,5 @@ int main()
     TestMultithreading();
     TestUnicode();
     TestNatvis();
+    TestDocumentationSamples();
 }

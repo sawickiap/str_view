@@ -2,15 +2,21 @@
 
 Null-termination-aware string-view class for C++.
 
+Author: Adam Sawicki - http://asawicki.info<br>
+Version: 1.0.0, 2018-07-18<br>
+License: MIT
+
+Documentation: see below and comments in the code of `str_view.hpp` file.
+
 # Introduction
 
 str_view is a small library for C++.
 It offers a convenient and optimized class that represents view into a character string.
 It has a form of a single header file: `str_view.hpp`, which you can just add to your project.
-All the members are defined as inline, so no compilation of additional CPP files or linking with additional libraries is required.
+All the members are defined as `inline`, so no compilation of additional CPP files or linking with additional libraries is required.
 
 str_view depends only on standard C and C++ library.
-It has been developed and tested under Windows using Microsoft Visual Studio Communiity 2017 Version 15.7.1, but it should work in other compilers and platforms as well. If you find any compatibility issues, please let me know.
+It has been developed and tested under Windows using Microsoft Visual Studio Communiity 2017 version 15.7.1, but it should work in other compilers and platforms as well. If you find any compatibility issues, please let me know.
 It works in both 32-bit and 64-bit code.
 
 The class is defined as `str_view_template`, because it's a template that can be parametrized with character types. Two typedefs are provided:
@@ -52,7 +58,7 @@ Foo("Ala ma kota"); // Passed "Ala ma kota"
 
 ```cpp
 char sz[32];
-sprintf(sz, "Number is %i", 7);
+sprintf_s(sz, "Number is %i", 7);
 Foo(sz); // Passed "Number is 7"
 ```
 
@@ -107,11 +113,13 @@ The class offers powerful `substr` method that returns new view, which may point
 str_view orig = "Ala ma kota";
 Foo(orig.substr(
     4)); // offset
-// Passed "ma kota" - substring from offset 0 to the end.
+// Passed "ma kota" - substring from offset 4 to the end.
+
 Foo(orig.substr(
     0, // offset
     3)); // length
 // Passed "Ala" - substring limited to 3 characters.
+
 Foo(orig.substr(
     4, // offset
     2)); // length
@@ -124,13 +132,20 @@ Foo(orig.substr(
 
 Call `length()` to retrieve length of string view (number of charecters). Alternative name is `size()`, but it's not recommended because its name may be misleading - it may suggest size in bytes not in characters.
 
-`1()` method returns `true` when the string is empty (has length of 0). It may be more efficient than `lenght()`.
+`empty()` method returns `true` when the string is empty (has length of 0). It may be more efficient than `length()`.
 
 `data()` method returns a pointer to the underlying character array. Characters are always laid out sequentially in memory, so the pointer may be used as normal C array.
 
-`begin()` and `end()` methods return pointers to the first character and to the character following the last character of the view, respectively. Together they form a range that may be used e.g. with STL algorithms that expect a pair of iterators.
+`begin()` and `end()` methods return pointers to the first character and to the character following the last character of the view, respectively. Together they form a range that may be used e.g. with STL algorithms that expect a pair of iterators. They also enable usage of range-based for loop.
 
-Individual characters can be read using overloaded `operator[]`. Alternative syntax is `at()` method. None of them perform range check, for performance reasons.
+```cpp
+str_view v = str_view("Ala ma kota");
+// Prints "Ala ma kota"
+for(char ch : v)
+    printf("%c", ch);
+```
+
+Individual characters can be read using overloaded `operator[]`. Alternative syntax is `at()` method. None of them perform range checking, for performance reasons.
 
 First character can also be fetched using `front()` method, and last character is returned by `back()` method.
 
@@ -148,10 +163,96 @@ int r = v1.compare(v2,
 
 String view can also be searched and checked using methods: `starts_with()` and `ends_with()` (also supports case-insensitive comparison), `find()`, `rfind()`, `find_first_of()`, `find_last_of()`, `find_first_not_of()`, `find_last_not_of()`.
 
-Last but not least, strings passed in a C++ program often need to end up as null-terminated C strings to be passed to some external libraries, so the class offers `c_str()` method similar to `std::string` that returns pointer to such null-terminated string. It may be either pointer to the original string if it's null terminated, or an internal copy. The copy is valid as long as `str_view` object is alive and it's not modified to point to a different string. It is automatically destroyed.
+Last but not least, because strings in a C++ program often need to end up as null-terminated C strings to be passed to some external libraries, the class offers `c_str()` method similar to `std::string` that returns pointer to such null-terminated string. It may be either pointer to the original string if it's null terminated, or an internal copy. The copy is valid as long as `str_view` object is alive and it's not modified to point to a different string. It is automatically destroyed.
 
 ```cpp
 str_view v = str_view("Ala ma kota");
 str_view sub_v = v.substr(4, 2);
 printf("sub_v is: %s", sub_v.c_str()); // Prints "sub_v is: ma"
 ```
+
+# Performance
+
+Unique feature of this library is that a string view is "null-termination-aware" - it not only remembers pointer and length of the referred string, but also the way it was created to avoid unnecessary operations and lazily evaluate those that are requested.
+
+- If it was created from a null-terminated string:
+  - `c_str()` trivially returns pointer to the original string.
+  - Length is unknown and it is calculated upon first call to `length()`.
+- On the other hand, if it was created from a string that is not null-terminated:
+  - Length is explicitly known, so `length()` trivially returns it.
+  - `c_str()` creates a local, null-terminated copy of the string upon first call.
+
+Example 1: View created from a null-terminated string.
+
+```cpp
+const char* sz = "Ala ma kota";
+str_view v = str_view(sz);
+
+// empty() peeks only first character. Length still unknown.
+printf("Empty: %s\n", v.empty() ? "true" : "false"); // Prints "Empty: false"
+// length() calculates length on first call.
+printf("Length: %zu\n", v.length()); // Prints "Length: 11"
+// c_str() trivially returns original pointer.
+printf("String is: %s\n", v.c_str()); // Prints "Ala ma kota"
+```
+
+Example 2: View created from a STL string.
+
+```cpp
+std::string s = "Ala ma kota";
+str_view v = str_view(s);
+
+// c_str() returns pointer returned from original s.c_str().
+printf("String is: %s\n", v.c_str());
+// Length is explicitly known from s, so empty() trivially checks if it's not 0.
+printf("Empty: %s\n", v.empty() ? "true" : "false");
+// Length is explicitly known from s, so length() trivially returns it.
+printf("Length: %zu\n", v.length());
+```
+
+Example 3: View created from character array that is not null-terminated.
+
+```cpp
+const char* sz = "Ala ma kota";
+str_view v = str_view(sz + 4, 2);
+
+// c_str() creates and returns local, null-terminated copy.
+printf("String is: %s\n", v.c_str()); // Prints "ma"
+// Length is explicitly known, so empty() trivially checks if it's not 0.
+printf("Empty: %s\n", v.empty() ? "true" : "false"); // Prints "Empty: false"
+// Length is explicitly known, so length() trivially returns it.
+printf("Length: %zu\n", v.length()); // Prints "Length: 2"
+```
+
+This optimization also works with substrings:
+
+```cpp
+str_view vFull = str_view("Ala ma kota");
+str_view vBegin = vFull.substr(
+    0, // offset
+    3); // length
+
+// Substring is not null-terminated. c_str() creates and returns local, null-terminated copy.
+printf("String is: %s\n", vBegin.c_str()); // Prints "Ala"
+// Length is explicitly known, so empty() trivially checks if it's not 0.
+printf("Empty: %s\n", vBegin.empty() ? "true" : "false"); // Prints "Empty: false"
+// Length is explicitly known, so length() trivially returns it.
+printf("Length: %zu\n", vBegin.length()); // Prints "Length: 3"
+```
+
+```cpp
+str_view vFull = str_view("Ala ma kota");
+str_view vEnd = vFull.substr(
+    7); // offset
+
+// Substring is null-terminated. c_str() returns original pointer, adjusted by offset.
+printf("String is: %s\n", vEnd.c_str()); // Prints "kota"
+// Length is still unknown. empty() peeks only first character.
+printf("Empty: %s\n", vEnd.empty() ? "true" : "false"); // Prints "Empty: false"
+// length() calculates length on first call.
+printf("Length: %zu\n", vEnd.length()); // Prints "Length: 4"
+```
+
+# Thread-safety
+
+Despite lazy evaluation, the class is thread-safe. More specifically, `const` methods of a single `str_view` object, including `length()`, `empty()`, and `c_str()`, can be called simultaneously from multiple threads. They are synchronized internally using atomics.

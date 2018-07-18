@@ -1,3 +1,40 @@
+/*
+str_view - null-termination-aware string-view class for C++.
+
+Author:  Adam Sawicki - http://asawicki.info - adam__DELETE__@asawicki.info
+Version: 1.0.0, 2018-07-18
+License: MIT
+
+Documentation: see README.md and comments in the code below.
+
+# Version history
+
+- Version 1.0.0, 2018-07-18
+  First version.
+
+# License
+
+Copyright 2018 Adam Sawicki
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+*/
 #pragma once
 
 #include <string>
@@ -25,22 +62,32 @@ public:
     typedef CharT CharT;
     typedef std::basic_string<CharT, std::char_traits<CharT>, std::allocator<CharT>> StringT;
 
-    // Initializes to empty string.
+    /*
+    Initializes to empty string.
+    */
     inline str_view_template();
     
-    // Initializes from a null-terminated string.
-    // Null is acceptable. It means empty string.
+    /*
+    Initializes from a null-terminated string.
+    Null is acceptable. It means empty string.
+    */
     inline str_view_template(const CharT* sz);
-    // Initializes from not null-terminated string.
-    // Null is acceptable if length is 0.
+    /*
+    Initializes from not null-terminated string.
+    Null is acceptable if length is 0.
+    */
     inline str_view_template(const CharT* str, size_t length);
-    // Initializes from string with given length, with explicit statement that it is null-terminated.
-    // Null is acceptable if length is 0.
+    /*
+    Initializes from string with given length, with explicit statement that it is null-terminated.
+    Null is acceptable if length is 0.
+    */
     struct StillNullTerminated { };
     inline str_view_template(const CharT* str, size_t length, StillNullTerminated);
     
-    // Initializes from an STL string.
-    // length can exceed actual str.length(). It then spans to the end of str.
+    /*
+    Initializes from an STL string.
+    length can exceed actual str.length(). It then spans to the end of str.
+    */
     inline str_view_template(const StringT& str, size_t offset = 0, size_t length = SIZE_MAX);
 
     // Copy constructor.
@@ -106,8 +153,10 @@ public:
     inline CharT operator[](size_t index) const { return m_Begin[index]; }
     inline CharT at(size_t index) const { return m_Begin[index]; }
 
-    // Returns null-terminated string with contents of this object.
-    // Possibly an internal copy.
+    /*
+    Returns null-terminated string with contents of this object.
+    Possibly an internal copy.
+    */
     inline const CharT* c_str() const;
 
     /*
@@ -124,7 +173,7 @@ public:
     */
     inline size_t copy_to(CharT* dst, size_t offset = 0, size_t length = SIZE_MAX);
 
-    inline void to_string(StringT& dst) { dst.assign(begin(), end()); }
+    inline void to_string(StringT& dst, size_t offset = 0, size_t length = SIZE_MAX);
 
     /*
     Compares this with rhs lexicographically.
@@ -210,11 +259,17 @@ public:
     inline size_t find_last_not_of(const str_view_template<CharT>& chars, size_t pos = SIZE_MAX) const;
 
 private:
-    // SIZE_MAX means unknown.
+    /*
+    SIZE_MAX means unknown.
+    */
     mutable std::atomic<size_t> m_Length;
+    
     const CharT* m_Begin;
-    // 1 means pointed string is null-terminated by itself.
-    // Any others bits set mean pointer to array with null-terminated copy.
+
+    /*
+    1 means pointed string is null-terminated by itself.
+    Any others bits set mean pointer to array with null-terminated copy.
+    */
     mutable std::atomic<uintptr_t> m_NullTerminatedPtr;
 };
 
@@ -407,7 +462,7 @@ inline const CharT* str_view_template<CharT>::c_str() const
     uintptr_t v = m_NullTerminatedPtr;
 	if(v == 1)
     {
-        assert(m_Begin[length()] == (CharT)0); // Make sure it's really null terminated.
+        //assert(m_Begin[length()] == (CharT)0); // Make sure it's really null terminated.
 		return m_Begin;
     }
 	if(v == 0)
@@ -440,6 +495,15 @@ inline size_t str_view_template<CharT>::copy_to(CharT* dst, size_t offset, size_
     length = std::min(length, thisLen - offset);
     memcpy(dst, m_Begin + offset, length * sizeof(CharT));
     return length;
+}
+
+template<typename CharT>
+inline void str_view_template<CharT>::to_string(StringT& dst, size_t offset, size_t length)
+{
+    const size_t thisLen = this->length();
+    assert(offset <= thisLen);
+    length = std::min(length, thisLen - offset);
+    dst.assign(m_Begin + offset, m_Begin + (offset + length));
 }
 
 template<typename CharT>
