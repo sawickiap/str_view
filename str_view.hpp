@@ -2,13 +2,15 @@
 str_view - null-termination-aware string-view class for C++.
 
 Author:  Adam Sawicki - http://asawicki.info - adam__DELETE__@asawicki.info
-Version: 1.0.0, 2018-07-18
+Version: 1.1.0, 2018-09-11
 License: MIT
 
 Documentation: see README.md and comments in the code below.
 
 # Version history
 
+- Version 1.1.0, 2018-09-11
+  Added missing const to substr() method.
 - Version 1.0.0, 2018-07-18
   First version.
 
@@ -163,7 +165,7 @@ public:
     Returns a view of the substring [offset, offset + length).
     length can exceed actual length(). It then spans to the end of this string.
     */
-    inline str_view_template<CharT> substr(size_t offset = 0, size_t length = SIZE_MAX);
+    inline str_view_template<CharT> substr(size_t offset = 0, size_t length = SIZE_MAX) const;
 
     /*
     Copies the substring [offset, offset + length) to the character string pointed to by dst.
@@ -507,7 +509,7 @@ inline void str_view_template<CharT>::to_string(StringT& dst, size_t offset, siz
 }
 
 template<typename CharT>
-inline str_view_template<CharT> str_view_template<CharT>::substr(size_t offset, size_t length)
+inline str_view_template<CharT> str_view_template<CharT>::substr(size_t offset, size_t length) const
 {
     // Length can remain unknown.
     if(m_Length == SIZE_MAX && length == SIZE_MAX)
