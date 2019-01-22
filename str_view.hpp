@@ -2,13 +2,15 @@
 str_view - null-termination-aware string-view class for C++.
 
 Author:  Adam Sawicki - http://asawicki.info - adam__DELETE__@asawicki.info
-Version: 1.1.0, 2018-09-11
+Version: 1.1.1, 2019-01-22
 License: MIT
 
 Documentation: see README.md and comments in the code below.
 
 # Version history
 
+- Version 1.1.1, 2019-01-22
+  Added missing const to copy_to(), to_string() methods.
 - Version 1.1.0, 2018-09-11
   Added missing const to substr() method.
 - Version 1.0.0, 2018-07-18
