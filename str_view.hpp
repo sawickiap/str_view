@@ -173,9 +173,9 @@ public:
     Null character is not added past the end of destination.
     Returns number of characters copied.
     */
-    inline size_t copy_to(CharT* dst, size_t offset = 0, size_t length = SIZE_MAX);
+    inline size_t copy_to(CharT* dst, size_t offset = 0, size_t length = SIZE_MAX) const;
 
-    inline void to_string(StringT& dst, size_t offset = 0, size_t length = SIZE_MAX);
+    inline void to_string(StringT& dst, size_t offset = 0, size_t length = SIZE_MAX) const;
 
     /*
     Compares this with rhs lexicographically.
@@ -490,7 +490,7 @@ inline const CharT* str_view_template<CharT>::c_str() const
 }
 
 template<typename CharT>
-inline size_t str_view_template<CharT>::copy_to(CharT* dst, size_t offset, size_t length)
+inline size_t str_view_template<CharT>::copy_to(CharT* dst, size_t offset, size_t length) const
 {
     const size_t thisLen = this->length();
     assert(offset <= thisLen);
@@ -500,7 +500,7 @@ inline size_t str_view_template<CharT>::copy_to(CharT* dst, size_t offset, size_
 }
 
 template<typename CharT>
-inline void str_view_template<CharT>::to_string(StringT& dst, size_t offset, size_t length)
+inline void str_view_template<CharT>::to_string(StringT& dst, size_t offset, size_t length) const
 {
     const size_t thisLen = this->length();
     assert(offset <= thisLen);
