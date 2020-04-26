@@ -2,19 +2,38 @@
 str_view - null-termination-aware string-view class for C++.
 
 Author:  Adam Sawicki - http://asawicki.info - adam__DELETE__@asawicki.info
-Version: 1.1.1, 2019-01-22
+Version: 2.0.0-beta.1, 2020-04-26
 License: MIT
 
 Documentation: see README.md and comments in the code below.
 
 # Version history
 
-- Version 1.1.1, 2019-01-22
-  Added missing const to copy_to(), to_string() methods.
-- Version 1.1.0, 2018-09-11
-  Added missing const to substr() method.
-- Version 1.0.0, 2018-07-18
-  First version.
+Version 2.0.0-beta.1, 2020-04-26
+
+    Compatibility-breaking!
+    - The class is no longer thread-safe. Not using atomics, for better performance.
+
+    Major changes:
+    - Added optional compatibility with C++17 std::string_view/std::wstring_view:
+      constructor, method to_string_view. Enabled with configuration macro STR_VIEW_CPP17.
+    - Added methods remove_prefix, remove_suffix.
+    - Added new constructor for CharT[Length] - char array with compile-time known length.
+
+    Minor changes:
+    - Changes and optimizations in the internal data representation.
+
+Version 1.1.1, 2019-01-22
+
+    Added missing const to copy_to(), to_string() methods.
+
+Version 1.1.0, 2018-09-11
+
+    Added missing const to substr() method.
+
+Version 1.0.0, 2018-07-18
+
+    First version.
 
 # License
 
