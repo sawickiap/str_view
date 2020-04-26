@@ -41,9 +41,23 @@ SOFTWARE.
 */
 #pragma once
 
+/*
+Define this macro to enable C++17 compatibility.
+*/
+#ifndef STR_VIEW_CPP17
+#if defined(_MSVC_LANG) && _MSVC_LANG >= 201703L
+#define STR_VIEW_CPP17 1
+#else
+#define STR_VIEW_CPP17 0
+#endif
+#endif
+
 #include <string>
 #include <algorithm> // for min, max
 #include <memory> // for memcmp
+#if STR_VIEW_CPP17
+    #include <string_view>
+#endif
 
 #include <cassert>
 #include <cstring>
@@ -64,6 +78,9 @@ class str_view_template
 public:
     typedef CharT CharT;
     typedef std::basic_string<CharT, std::char_traits<CharT>, std::allocator<CharT>> StringT;
+#if STR_VIEW_CPP17
+    typedef std::basic_string_view<CharT, std::char_traits<CharT>> StringViewT;
+#endif
 
     /*
     Initializes to empty string.
@@ -97,6 +114,13 @@ public:
     length can exceed actual str.length(). It then spans to the end of str.
     */
     inline str_view_template(const StringT& str, size_t offset = 0, size_t length = SIZE_MAX);
+#if STR_VIEW_CPP17
+    /*
+    Initializes from an STL string view.
+    length can exceed actual str.length(). It then spans to the end of str.
+    */
+    inline str_view_template(const StringViewT& str, size_t offset = 0, size_t length = SIZE_MAX);
+#endif
 
     // Copy constructor.
     inline str_view_template(const str_view_template<CharT>& src, size_t offset = 0, size_t length = SIZE_MAX);
@@ -182,6 +206,10 @@ public:
     inline size_t copy_to(CharT* dst, size_t offset = 0, size_t length = SIZE_MAX) const;
 
     inline void to_string(StringT& dst, size_t offset = 0, size_t length = SIZE_MAX) const;
+
+#if STR_VIEW_CPP17
+    inline void to_string_view(StringViewT& dst, size_t offset = 0, size_t length = SIZE_MAX) const;
+#endif
 
     /*
     Compares this with rhs lexicographically.
@@ -361,6 +389,22 @@ inline str_view_template<CharT>::str_view_template(const StringT& str, size_t of
     }
 }
 
+#if STR_VIEW_CPP17
+
+template<typename CharT>
+inline str_view_template<CharT>::str_view_template(const StringViewT& str, size_t offset, size_t length) :
+    m_Length(0),
+    m_Begin(nullptr),
+    m_NullTerminatedPtr(nullptr)
+{
+    assert(offset <= str.length());
+    m_Length = std::min(length, str.length() - offset);
+    if(m_Length)
+        m_Begin = str.data() + offset;
+}
+
+#endif // #if STR_VIEW_CPP17
+
 template<typename CharT>
 inline str_view_template<CharT>::str_view_template(const str_view_template<CharT>& src, size_t offset, size_t length) :
 	m_Length(0),
@@ -511,6 +555,19 @@ inline void str_view_template<CharT>::to_string(StringT& dst, size_t offset, siz
     length = std::min(length, thisLen - offset);
     dst.assign(m_Begin + offset, m_Begin + (offset + length));
 }
+
+#if STR_VIEW_CPP17
+
+template<typename CharT>
+inline void str_view_template<CharT>::to_string_view(StringViewT& dst, size_t offset, size_t length) const
+{
+    const size_t thisLen = this->length();
+    assert(offset <= thisLen);
+    length = std::min(length, thisLen - offset);
+    dst = StringViewT(m_Begin + offset, length);
+}
+
+#endif // #if STR_VIEW_CPP17
 
 template<typename CharT>
 inline str_view_template<CharT> str_view_template<CharT>::substr(size_t offset, size_t length) const

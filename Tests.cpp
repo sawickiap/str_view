@@ -1,3 +1,4 @@
+#define STR_VIEW_CPP17 1
 #include "str_view.hpp"
 #include <thread>
 
@@ -275,6 +276,26 @@ static void TestRemovePrefixSuffix()
         TEST(strcmp(v2.c_str(), "") == 0);
     }
 }
+
+#if STR_VIEW_CPP17
+
+static void TestCpp17()
+{
+    std::string orig = "ABCDEF";
+    std::string_view stlView1 = std::string_view(orig);
+    str_view v1 = str_view(stlView1);
+    TEST(v1 == "ABCDEF");
+    std::string_view stlView2;
+    v1.to_string_view(stlView2);
+    TEST(stlView2 == "ABCDEF");
+
+    v1 = str_view(stlView1, 1, 4);
+    TEST(v1 == "BCDE");
+    v1.to_string_view(stlView2, 1, 2);
+    TEST(stlView2 == "CD");
+}
+
+#endif // #if STR_VIEW_CPP17
 
 static void TestZeroCharacter()
 {
@@ -672,6 +693,9 @@ int main()
     TestCopying();
     TestOperators();
     TestRemovePrefixSuffix();
+#if STR_VIEW_CPP17
+    TestCpp17();
+#endif
     TestZeroCharacter();
     TestOtherMethods();
     TestUnicode();
