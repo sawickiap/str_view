@@ -81,6 +81,11 @@ public:
     */
     inline str_view_template(const CharT* str, size_t length);
     /*
+    Initializes from an array of characters with length known at compile time.
+    */
+    template<size_t Length>
+    inline str_view_template(const CharT str[Length]);
+    /*
     Initializes from string with given length, with explicit statement that it is null-terminated.
     Null is acceptable if length is 0.
     */
@@ -301,6 +306,15 @@ inline str_view_template<CharT>::str_view_template(const CharT* str, size_t leng
 	m_Length(length),
 	m_Begin(length ? str : nullptr),
 	m_NullTerminatedPtr(nullptr)
+{
+}
+
+template<typename CharT>
+template<size_t Length>
+inline str_view_template<CharT>::str_view_template(const CharT str[Length]) :
+    m_Length(Length),
+    m_Begin(str),
+    m_NullTerminatedPtr(nullptr)
 {
 }
 
