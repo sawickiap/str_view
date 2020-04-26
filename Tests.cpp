@@ -551,6 +551,7 @@ static void TestDocumentationSamples()
         printf("Length: %zu\n", v.length()); // Prints "Length: 11"
         // c_str() trivially returns original pointer.
         printf("String is: %s\n", v.c_str()); // Prints "Ala ma kota"
+        TEST(v.c_str() == sz);
     }
 
     {
@@ -559,6 +560,7 @@ static void TestDocumentationSamples()
 
         // c_str() returns pointer returned from original s.c_str().
         printf("String is: %s\n", v.c_str());
+        TEST(v.c_str() == s.c_str());
         // Length is explicitly known from s, so empty() trivially checks if it's not 0.
         printf("Empty: %s\n", v.empty() ? "true" : "false");
         // Length is explicitly known from s, so length() trivially returns it.
@@ -571,6 +573,7 @@ static void TestDocumentationSamples()
 
         // c_str() creates and returns local, null-terminated copy.
         printf("String is: %s\n", v.c_str()); // Prints "ma"
+        TEST(v.c_str() != sz);
         // Length is explicitly known, so empty() trivially checks if it's not 0.
         printf("Empty: %s\n", v.empty() ? "true" : "false"); // Prints "Empty: false"
         // Length is explicitly known, so length() trivially returns it.
@@ -585,6 +588,7 @@ static void TestDocumentationSamples()
 
         // Substring is not null-terminated. c_str() creates and returns local, null-terminated copy.
         printf("String is: %s\n", vBegin.c_str()); // Prints "Ala"
+        TEST(vBegin.c_str() != vFull.c_str());
         // Length is explicitly known, so empty() trivially checks if it's not 0.
         printf("Empty: %s\n", vBegin.empty() ? "true" : "false"); // Prints "Empty: false"
         // Length is explicitly known, so length() trivially returns it.
@@ -598,6 +602,7 @@ static void TestDocumentationSamples()
 
         // Substring is null-terminated. c_str() returns original pointer, adjusted by offset.
         printf("String is: %s\n", vEnd.c_str()); // Prints "kota"
+        TEST(vEnd.c_str() == vFull.c_str() + 7);
         // Length is still unknown. empty() peeks only first character.
         printf("Empty: %s\n", vEnd.empty() ? "true" : "false"); // Prints "Empty: false"
         // length() calculates length on first call.
