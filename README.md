@@ -16,7 +16,7 @@ It has a form of a single header file: `str_view.hpp`, which you can just add to
 All the members are defined as `inline`, so no compilation of additional CPP files or linking with additional libraries is required.
 
 str_view depends only on standard C and C++ library.
-It has been developed and tested under Windows using Microsoft Visual Studio Communiity 2017 version 15.7.1, but it should work in other compilers and platforms as well. If you find any compatibility issues, please let me know.
+It has been developed and tested under Windows using Microsoft Visual Studio 2019, but it should work in other compilers and platforms as well. If you find any compatibility issues, please let me know.
 It works in both 32-bit and 64-bit code.
 
 The class is defined as `str_view_template`, because it's a template that can be parametrized with character types. Two typedefs are provided:
@@ -107,7 +107,7 @@ Foo(str_view(str,
 // Passed "ma"
 ```
 
-The class offers powerful `substr` method that returns new view, which may point to a piece of source view.
+The class offers powerful `substr` method that returns a new view, which may point to a piece of source view.
 
 ```cpp
 str_view orig = "Ala ma kota";
@@ -130,7 +130,7 @@ Foo(orig.substr(
 
 `str_view` class offers a convenient set of methods and operators similar to `std::string` and `std::string_view` from C++17, but it's not fully compatible with any of them.
 
-Call `length()` to retrieve length of string view (number of charecters). Alternative name is `size()`, but it's not recommended because its name may be misleading - it may suggest size in bytes not in characters.
+Call `length()` to retrieve length of string view (number of charecters). Alternative name is `size()`, but personally I don't recommend it because its name may be misleading - it may suggest size in bytes not in characters.
 
 `empty()` method returns `true` when the string is empty (has length of 0). It may be more efficient than `length()`.
 
