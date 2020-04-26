@@ -192,6 +192,90 @@ static void TestOperators()
     }
 }
 
+static void TestRemovePrefixSuffix()
+{
+    // Fixed length
+    {
+        const char* orig = "ABCDEF--";
+
+        str_view v1 = str_view(orig, 6);
+        v1.remove_prefix(0);
+        TEST(v1 == "ABCDEF");
+        TEST(strcmp(v1.c_str(), "ABCDEF") == 0);
+        v1.remove_prefix(2);
+        TEST(v1 == "CDEF");
+        TEST(strcmp(v1.c_str(), "CDEF") == 0);
+        v1.remove_prefix(4);
+        TEST(v1.empty());
+        TEST(strcmp(v1.c_str(), "") == 0);
+
+        str_view v2 = str_view(orig, 6);
+        v2.remove_suffix(0);
+        TEST(v2 == "ABCDEF");
+        TEST(strcmp(v2.c_str(), "ABCDEF") == 0);
+        v2.remove_suffix(2);
+        TEST(v2 == "ABCD");
+        TEST(strcmp(v2.c_str(), "ABCD") == 0);
+        v2.remove_suffix(4);
+        TEST(v2.empty());
+        TEST(strcmp(v2.c_str(), "") == 0);
+    }
+
+    // Null-terminated
+    {
+        const char* orig = "ABCDEF";
+
+        str_view v1 = str_view(orig);
+        v1.remove_prefix(0);
+        TEST(v1 == "ABCDEF");
+        TEST(v1.c_str() == orig);
+        v1.remove_prefix(2);
+        TEST(v1 == "CDEF");
+        TEST(v1.c_str() == orig + 2);
+        v1.remove_prefix(4);
+        TEST(v1.empty());
+        TEST(strcmp(v1.c_str(), "") == 0);
+
+        str_view v2 = str_view(orig);
+        v2.remove_suffix(0);
+        TEST(v2 == "ABCDEF");
+        TEST(v2.c_str() == orig);
+        v2.remove_suffix(2);
+        TEST(v2 == "ABCD");
+        TEST(strcmp(v2.c_str(), "ABCD") == 0);
+        v2.remove_suffix(4);
+        TEST(v2.empty());
+        TEST(strcmp(v2.c_str(), "") == 0);
+    }
+
+    // std::string
+    {
+        std::string orig = "ABCDEF";
+
+        str_view v1 = str_view(orig);
+        v1.remove_prefix(0);
+        TEST(v1 == "ABCDEF");
+        TEST(v1.c_str() == orig.c_str());
+        v1.remove_prefix(2);
+        TEST(v1 == "CDEF");
+        TEST(v1.c_str() == orig.c_str() + 2);
+        v1.remove_prefix(4);
+        TEST(v1.empty());
+        TEST(strcmp(v1.c_str(), "") == 0);
+
+        str_view v2 = str_view(orig);
+        v2.remove_suffix(0);
+        TEST(v2 == "ABCDEF");
+        TEST(v2.c_str() == orig.c_str());
+        v2.remove_suffix(2);
+        TEST(v2 == "ABCD");
+        TEST(strcmp(v2.c_str(), "ABCD") == 0);
+        v2.remove_suffix(4);
+        TEST(v2.empty());
+        TEST(strcmp(v2.c_str(), "") == 0);
+    }
+}
+
 static void TestZeroCharacter()
 {
     const char original[] = "ABC\0DEF";
@@ -587,6 +671,7 @@ int main()
     TestAdvancedConstruction();
     TestCopying();
     TestOperators();
+    TestRemovePrefixSuffix();
     TestZeroCharacter();
     TestOtherMethods();
     TestUnicode();

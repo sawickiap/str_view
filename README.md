@@ -163,7 +163,7 @@ int r = v1.compare(v2,
 
 String view can also be searched and checked using methods: `starts_with()` and `ends_with()` (also supports case-insensitive comparison), `find()`, `rfind()`, `find_first_of()`, `find_last_of()`, `find_first_not_of()`, `find_last_not_of()`.
 
-Last but not least, because strings in a C++ program often need to end up as null-terminated C strings to be passed to some external libraries, the class offers `c_str()` method similar to `std::string` that returns pointer to such null-terminated string. It may be either pointer to the original string if it's null terminated, or an internal copy. The copy is valid as long as `str_view` object is alive and it's not modified to point to a different string. It is automatically destroyed.
+Last but not least, because strings in a C++ program often need to end up as null-terminated C strings to be passed to some external libraries, the class offers `c_str()` method similar to `std::string` that returns pointer to such null-terminated string. It may be either pointer to the original string if it's null terminated, or an internal copy. The copy is valid as long as `str_view` object is alive and it's not modified to point to a different string or using any of its non-`const` methods. It is owned by the string view object and automatically destroyed.
 
 ```cpp
 str_view v = str_view("Ala ma kota");

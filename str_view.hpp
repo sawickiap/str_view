@@ -266,6 +266,15 @@ public:
     */
     inline size_t find_last_not_of(const str_view_template<CharT>& chars, size_t pos = SIZE_MAX) const;
 
+    /*
+    Moves the start of the view forward by n characters. 
+    */
+    inline void remove_prefix(size_t n);
+    /*
+    Moves the end of the view back by n characters. 
+    */
+    inline void remove_suffix(size_t n);
+
 private:
     /*
     SIZE_MAX means unknown.
@@ -749,6 +758,82 @@ inline size_t str_view_template<CharT>::find_last_not_of(const str_view_template
             return thisIndex;
     }
     return SIZE_MAX;
+}
+
+template<typename CharT>
+inline void str_view_template<CharT>::remove_prefix(size_t n)
+{
+    if(n == 0)
+        return;
+    if(m_Length != SIZE_MAX)
+    {
+        assert(n <= m_Length);
+        if(n < m_Length)
+        {
+            if(m_NullTerminatedPtr)
+            {
+                if(m_NullTerminatedPtr == m_Begin)
+                    m_NullTerminatedPtr += n;
+                else
+                {
+                    delete[] m_NullTerminatedPtr;
+                    m_NullTerminatedPtr = nullptr;
+                }
+            }
+            m_Length -= n;
+            m_Begin += n;
+        }
+        else
+        {
+            // String becomes empty.
+            if(m_NullTerminatedPtr && m_NullTerminatedPtr != m_Begin)
+                delete[] m_NullTerminatedPtr;
+            m_NullTerminatedPtr = nullptr;
+            m_Length = 0;
+            m_Begin = nullptr;
+        }
+    }
+    else
+    {
+        assert(m_NullTerminatedPtr == m_Begin);
+        m_Begin += n;
+        m_NullTerminatedPtr += n;
+    }
+}
+
+template<typename CharT>
+inline void str_view_template<CharT>::remove_suffix(size_t n)
+{
+    if(n == 0)
+        return;
+    if(m_Length != SIZE_MAX)
+    {
+        assert(n <= m_Length);
+        if(n < m_Length)
+        {
+            // No longer null terminated.
+            if(m_NullTerminatedPtr && m_NullTerminatedPtr != m_Begin)
+                delete[] m_NullTerminatedPtr;
+            m_NullTerminatedPtr = nullptr;
+            m_Length -= n;
+        }
+        else
+        {
+            // String becomes empty.
+            if(m_NullTerminatedPtr && m_NullTerminatedPtr != m_Begin)
+                delete[] m_NullTerminatedPtr;
+            m_NullTerminatedPtr = nullptr;
+            m_Length = 0;
+            m_Begin = nullptr;
+        }
+    }
+    else
+    {
+        assert(m_NullTerminatedPtr == m_Begin);
+        // No longer null terminated.
+        m_Length = length() - n;
+        m_NullTerminatedPtr = nullptr;
+    }
 }
 
 template<typename CharT>
