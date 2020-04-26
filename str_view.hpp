@@ -64,11 +64,11 @@ SOFTWARE.
 Define this macro to enable C++17 compatibility.
 */
 #ifndef STR_VIEW_CPP17
-#if defined(_MSVC_LANG) && _MSVC_LANG >= 201703L
-#define STR_VIEW_CPP17 1
-#else
-#define STR_VIEW_CPP17 0
-#endif
+    #if defined(_MSVC_LANG) && _MSVC_LANG >= 201703L
+        #define STR_VIEW_CPP17 1
+    #else
+        #define STR_VIEW_CPP17 0
+    #endif
 #endif
 
 #include <string>
