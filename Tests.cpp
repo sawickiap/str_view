@@ -372,35 +372,6 @@ static void TestOtherMethods()
     }
 }
 
-static void TestMultithreading()
-{
-    const char* original = "ABCDEF";
-    str_view substr = str_view(original, 4);
-
-    constexpr size_t THREAD_COUNT = 32;
-    std::thread threads[THREAD_COUNT];
-    const char* ptrs[THREAD_COUNT];
-    for(size_t i = 0; i < THREAD_COUNT; ++i)
-    {
-        threads[i] = std::thread([i, &substr, &ptrs]() {
-            TEST(substr.length() == 4);
-            const char* cstr = substr.c_str();
-            TEST(strcmp(cstr, "ABCD") == 0);
-            ptrs[i] = cstr;
-        });
-    }
-
-    for(size_t i = 0; i < THREAD_COUNT; ++i)
-    {
-        threads[i].join();
-    }
-    for(size_t i = 0; i < THREAD_COUNT; ++i)
-    {
-        // Make sure the same pointer was returned on all threads.
-        TEST(ptrs[i] == substr.c_str());
-    }
-}
-
 static void TestUnicode()
 {
     wstr_view fromNull = wstr_view(nullptr);
@@ -618,7 +589,6 @@ int main()
     TestOperators();
     TestZeroCharacter();
     TestOtherMethods();
-    TestMultithreading();
     TestUnicode();
     TestNatvis();
     TestDocumentationSamples();
