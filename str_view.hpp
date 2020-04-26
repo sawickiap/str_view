@@ -270,10 +270,11 @@ private:
     const CharT* m_Begin;
 
     /*
-    1 means pointed string is null-terminated by itself.
-    Any others bits set mean pointer to array with null-terminated copy.
+    Null: a null-terminated copy not yet created.
+    Equal to m_Begin: the original string is null-terminated itself.
+    Any other value: A copy is created.
     */
-    mutable uintptr_t m_NullTerminatedPtr;
+    mutable const CharT* m_NullTerminatedPtr;
 };
 
 typedef str_view_template<char> str_view;
@@ -283,7 +284,7 @@ template<typename CharT>
 inline str_view_template<CharT>::str_view_template() :
 	m_Length(0),
 	m_Begin(nullptr),
-	m_NullTerminatedPtr(0)
+	m_NullTerminatedPtr(nullptr)
 {
 }
 
@@ -291,7 +292,7 @@ template<typename CharT>
 inline str_view_template<CharT>::str_view_template(const CharT* sz) :
 	m_Length(sz ? SIZE_MAX : 0),
 	m_Begin(sz),
-	m_NullTerminatedPtr(sz ? 1 : 0)
+	m_NullTerminatedPtr(sz ? sz : nullptr)
 {
 }
 
@@ -299,7 +300,7 @@ template<typename CharT>
 inline str_view_template<CharT>::str_view_template(const CharT* str, size_t length) :
 	m_Length(length),
 	m_Begin(length ? str : nullptr),
-	m_NullTerminatedPtr(0)
+	m_NullTerminatedPtr(nullptr)
 {
 }
 
@@ -307,12 +308,12 @@ template<typename CharT>
 inline str_view_template<CharT>::str_view_template(const CharT* str, size_t length, StillNullTerminated) :
 	m_Length(length),
 	m_Begin(nullptr),
-	m_NullTerminatedPtr(0)
+	m_NullTerminatedPtr(nullptr)
 {
     if(length)
     {
         m_Begin = str;
-        m_NullTerminatedPtr = 1;
+        m_NullTerminatedPtr = str;
     }
     assert(m_Begin[m_Length] == (CharT)0); // Make sure it's really null terminated.
 }
@@ -321,7 +322,7 @@ template<typename CharT>
 inline str_view_template<CharT>::str_view_template(const StringT& str, size_t offset, size_t length) :
 	m_Length(0),
 	m_Begin(nullptr),
-	m_NullTerminatedPtr(0)
+	m_NullTerminatedPtr(nullptr)
 {
 	assert(offset <= str.length());
     m_Length = std::min(length, str.length() - offset);
@@ -330,7 +331,7 @@ inline str_view_template<CharT>::str_view_template(const StringT& str, size_t of
         if(m_Length == str.length() - offset)
         {
             m_Begin = str.c_str() + offset;
-            m_NullTerminatedPtr = 1;
+            m_NullTerminatedPtr = m_Begin;
         }
         else
             m_Begin = str.data() + offset;
@@ -341,15 +342,15 @@ template<typename CharT>
 inline str_view_template<CharT>::str_view_template(const str_view_template<CharT>& src, size_t offset, size_t length) :
 	m_Length(0),
 	m_Begin(nullptr),
-	m_NullTerminatedPtr(0)
+	m_NullTerminatedPtr(nullptr)
 {
     // Source length is unknown, constructor doesn't limit the length - it may remain unknown.
     if(src.m_Length == SIZE_MAX && length == SIZE_MAX)
     {
         m_Length = SIZE_MAX;
         m_Begin = src.m_Begin + offset;
-        assert(src.m_NullTerminatedPtr == 1);
-        m_NullTerminatedPtr = 1;
+        assert(src.m_NullTerminatedPtr == src.m_Begin);
+        m_NullTerminatedPtr = m_Begin;
     }
     else
     {
@@ -359,8 +360,8 @@ inline str_view_template<CharT>::str_view_template(const str_view_template<CharT
         if(m_Length)
         {
             m_Begin = src.m_Begin + offset;
-            if(src.m_NullTerminatedPtr == 1 && m_Length == srcLen - offset)
-                m_NullTerminatedPtr = 1;
+            if(src.m_NullTerminatedPtr == src.m_Begin && m_Length == srcLen - offset)
+                m_NullTerminatedPtr = m_Begin;
         }
     }
 }
@@ -373,15 +374,14 @@ inline str_view_template<CharT>::str_view_template(str_view_template<CharT>&& sr
 {
     src.m_Length = 0;
 	src.m_Begin = nullptr;
-    src.m_NullTerminatedPtr = 0;
+    src.m_NullTerminatedPtr = nullptr;
 }
 
 template<typename CharT>
 inline str_view_template<CharT>::~str_view_template()
 {
-    uintptr_t v = m_NullTerminatedPtr;
-	if(v > 1)
-		delete[] (CharT*)v;
+	if(m_NullTerminatedPtr && m_NullTerminatedPtr != m_Begin)
+		delete[] m_NullTerminatedPtr;
 }
 
 template<typename CharT>
@@ -389,12 +389,11 @@ inline str_view_template<CharT>& str_view_template<CharT>::operator=(const str_v
 {
 	if(&src != this)
     {
-        uintptr_t v = m_NullTerminatedPtr;
-		if(v > 1)
-			delete[] (CharT*)v;
+		if(m_NullTerminatedPtr && m_NullTerminatedPtr != m_Begin)
+			delete[] m_NullTerminatedPtr;
 		m_Begin = src.m_Begin;
 		m_Length = src.m_Length;
-		m_NullTerminatedPtr = src.m_NullTerminatedPtr == 1 ? 1 : 0;
+		m_NullTerminatedPtr = src.m_NullTerminatedPtr == src.m_Begin ? m_Begin : nullptr;
     }
 	return *this;
 }
@@ -404,15 +403,14 @@ inline str_view_template<CharT>& str_view_template<CharT>::operator=(str_view_te
 {
 	if(&src != this)
     {
-        uintptr_t v = m_NullTerminatedPtr;
-		if(v > 1)
-			delete[] (CharT*)v;
+		if(m_NullTerminatedPtr && m_NullTerminatedPtr != m_Begin)
+			delete[] m_NullTerminatedPtr;
 		m_Begin = src.m_Begin;
 		m_Length = src.m_Length;
 		m_NullTerminatedPtr = src.m_NullTerminatedPtr;
         src.m_Length = 0;
 		src.m_Begin = nullptr;
-        src.m_NullTerminatedPtr = 0;
+        src.m_NullTerminatedPtr = nullptr;
     }
 	return *this;
 }
@@ -428,30 +426,25 @@ inline void str_view_template<CharT>::swap(str_view_template<CharT>& rhs) noexce
 template<typename CharT>
 inline size_t str_view_template<CharT>::length() const
 {
-    size_t len = m_Length;
-    if(len == SIZE_MAX)
+    if(m_Length == SIZE_MAX)
     {
-        assert(m_NullTerminatedPtr == 1);
-        len = tstrlen(m_Begin);
-        // It doesn't matter if other thread does it at the same time.
-        // It will atomically set it to the same value.
-        m_Length = len;
+        assert(m_NullTerminatedPtr == m_Begin);
+        m_Length = tstrlen(m_Begin);
     }
-    return len;
+    return m_Length;
 }
 
 template<typename CharT>
 inline bool str_view_template<CharT>::empty() const
 {
-    size_t len = m_Length;
-    if(len == SIZE_MAX)
+    if(m_Length == SIZE_MAX)
     {
         // Length is unknown. String is null-terminated.
         // We still don't need to know the length. We just peek first character.
-        assert(m_NullTerminatedPtr == 1);
+        assert(m_NullTerminatedPtr == m_Begin);
         return m_Begin == nullptr || *m_Begin == (CharT)0;
     }
-    return len == 0;
+    return m_Length == 0;
 }
 
 template<typename CharT>
@@ -460,23 +453,21 @@ inline const CharT* str_view_template<CharT>::c_str() const
     static const CharT nullChar = (CharT)0;
 	if(empty())
 		return &nullChar;
-	if(m_NullTerminatedPtr == 1)
+	if(m_NullTerminatedPtr == m_Begin)
     {
         //assert(m_Begin[length()] == (CharT)0); // Make sure it's really null terminated.
 		return m_Begin;
     }
-	if(m_NullTerminatedPtr == 0)
+	if(m_NullTerminatedPtr == nullptr)
     {
         // Not null terminated, so length must be known.
         assert(m_Length != SIZE_MAX);
-        CharT* nullTerminatedCopy = new CharT[m_Length + 1];
-        assert(((uintptr_t)nullTerminatedCopy & 1) == 0); // Make sure allocated address is even.
-		memcpy(nullTerminatedCopy, begin(), m_Length * sizeof(CharT));
-        nullTerminatedCopy[m_Length] = (CharT)0;
-        m_NullTerminatedPtr = (uintptr_t)nullTerminatedCopy;
-        return nullTerminatedCopy;
+        CharT* nullTerminated = new CharT[m_Length + 1];
+		memcpy(nullTerminated, begin(), m_Length * sizeof(CharT));
+        nullTerminated[m_Length] = (CharT)0;
+        m_NullTerminatedPtr = nullTerminated;
     }
-	return (const CharT*)m_NullTerminatedPtr;
+	return m_NullTerminatedPtr;
 }
 
 template<typename CharT>
@@ -504,7 +495,7 @@ inline str_view_template<CharT> str_view_template<CharT>::substr(size_t offset, 
     // Length can remain unknown.
     if(m_Length == SIZE_MAX && length == SIZE_MAX)
     {
-        assert(m_NullTerminatedPtr == 1);
+        assert(m_NullTerminatedPtr == m_Begin);
         return str_view_template<CharT>(m_Begin + offset);
     }
 
@@ -512,7 +503,7 @@ inline str_view_template<CharT> str_view_template<CharT>::substr(size_t offset, 
     assert(offset <= thisLen);
 	length = std::min(length, thisLen - offset);
 	// Result will be null-terminated.
-	if(m_NullTerminatedPtr == 1 && length == thisLen - offset)
+	if(m_NullTerminatedPtr == m_Begin && length == thisLen - offset)
 		return str_view_template<CharT>(m_Begin + offset, length, StillNullTerminated());
 	// Result will not be null-terminated.
 	return str_view_template<CharT>(m_Begin + offset, length);
