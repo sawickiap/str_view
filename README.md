@@ -255,4 +255,4 @@ printf("Length: %zu\n", vEnd.length()); // Prints "Length: 4"
 
 # Thread-safety
 
-Despite lazy evaluation, the class is thread-safe. More specifically, `const` methods of a single `str_view` object, including `length()`, `empty()`, and `c_str()`, can be called simultaneously from multiple threads. They are synchronized internally using atomics.
+The library has no global state, so separate string view objects are safe to be used from different threads simultaneously. However, a single string view object is NOT safe to be used from multiple threads simultaneously! A copy of such object must be made for every thread that needs it. Note this is a difference comparing to version 1 of the library. Atomics are no longer used for performance reason. Even `const` methods can modify internal mutable state of the object, e.g. calculate length or create a null-terminated copy on first use.

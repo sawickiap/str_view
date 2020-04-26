@@ -18,7 +18,7 @@ Documentation: see README.md and comments in the code below.
 
 # License
 
-Copyright 2018 Adam Sawicki
+Copyright 2018-2020 Adam Sawicki
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -42,7 +42,6 @@ SOFTWARE.
 #pragma once
 
 #include <string>
-#include <atomic>
 #include <algorithm> // for min, max
 #include <memory> // for memcmp
 
@@ -266,7 +265,7 @@ private:
     /*
     SIZE_MAX means unknown.
     */
-    mutable std::atomic<size_t> m_Length;
+    mutable size_t m_Length;
     
     const CharT* m_Begin;
 
@@ -274,7 +273,7 @@ private:
     1 means pointed string is null-terminated by itself.
     Any others bits set mean pointer to array with null-terminated copy.
     */
-    mutable std::atomic<uintptr_t> m_NullTerminatedPtr;
+    mutable uintptr_t m_NullTerminatedPtr;
 };
 
 typedef str_view_template<char> str_view;
@@ -368,11 +367,13 @@ inline str_view_template<CharT>::str_view_template(const str_view_template<CharT
 
 template<typename CharT>
 inline str_view_template<CharT>::str_view_template(str_view_template<CharT>&& src) :
-	m_Length(src.m_Length.exchange(0)),
+	m_Length(src.m_Length),
 	m_Begin(src.m_Begin),
-	m_NullTerminatedPtr(src.m_NullTerminatedPtr.exchange(0))
+	m_NullTerminatedPtr(src.m_NullTerminatedPtr)
 {
+    src.m_Length = 0;
 	src.m_Begin = nullptr;
+    src.m_NullTerminatedPtr = 0;
 }
 
 template<typename CharT>
@@ -392,7 +393,7 @@ inline str_view_template<CharT>& str_view_template<CharT>::operator=(const str_v
 		if(v > 1)
 			delete[] (CharT*)v;
 		m_Begin = src.m_Begin;
-		m_Length = src.m_Length.load();
+		m_Length = src.m_Length;
 		m_NullTerminatedPtr = src.m_NullTerminatedPtr == 1 ? 1 : 0;
     }
 	return *this;
@@ -407,9 +408,11 @@ inline str_view_template<CharT>& str_view_template<CharT>::operator=(str_view_te
 		if(v > 1)
 			delete[] (CharT*)v;
 		m_Begin = src.m_Begin;
-		m_Length = src.m_Length.exchange(0);
-		m_NullTerminatedPtr = src.m_NullTerminatedPtr.exchange(0);
+		m_Length = src.m_Length;
+		m_NullTerminatedPtr = src.m_NullTerminatedPtr;
+        src.m_Length = 0;
 		src.m_Begin = nullptr;
+        src.m_NullTerminatedPtr = 0;
     }
 	return *this;
 }
@@ -417,15 +420,9 @@ inline str_view_template<CharT>& str_view_template<CharT>::operator=(str_view_te
 template<typename CharT>
 inline void str_view_template<CharT>::swap(str_view_template<CharT>& rhs) noexcept
 {
-    const size_t rhsLength = rhs.m_Length.load();
-    const size_t lhsLength = m_Length.exchange(rhsLength);
-    rhs.m_Length.store(lhsLength);
-
+    std::swap(m_Length, rhs.m_Length);
     std::swap(m_Begin, rhs.m_Begin);
-
-    const uintptr_t rhsNullTerminatedPtr = rhs.m_NullTerminatedPtr.load();
-    const uintptr_t lhsNullTerminatedPtr = m_NullTerminatedPtr.exchange(rhsNullTerminatedPtr);
-    rhs.m_NullTerminatedPtr.store(lhsNullTerminatedPtr);
+    std::swap(m_NullTerminatedPtr, rhs.m_NullTerminatedPtr);
 }
 
 template<typename CharT>
@@ -463,32 +460,23 @@ inline const CharT* str_view_template<CharT>::c_str() const
     static const CharT nullChar = (CharT)0;
 	if(empty())
 		return &nullChar;
-    uintptr_t v = m_NullTerminatedPtr;
-	if(v == 1)
+	if(m_NullTerminatedPtr == 1)
     {
         //assert(m_Begin[length()] == (CharT)0); // Make sure it's really null terminated.
 		return m_Begin;
     }
-	if(v == 0)
+	if(m_NullTerminatedPtr == 0)
     {
         // Not null terminated, so length must be known.
         assert(m_Length != SIZE_MAX);
         CharT* nullTerminatedCopy = new CharT[m_Length + 1];
         assert(((uintptr_t)nullTerminatedCopy & 1) == 0); // Make sure allocated address is even.
 		memcpy(nullTerminatedCopy, begin(), m_Length * sizeof(CharT));
-		nullTerminatedCopy[m_Length] = (CharT)0;
-
-        uintptr_t expected = 0;
-        if(m_NullTerminatedPtr.compare_exchange_strong(expected, (uintptr_t)nullTerminatedCopy))
-            return nullTerminatedCopy;
-        else
-        {
-            // Other thread was quicker to set his copy to m_NullTerminatedPtr. Destroy mine, use that one.
-            delete[] nullTerminatedCopy;
-            return (const CharT*)expected;
-        }
+        nullTerminatedCopy[m_Length] = (CharT)0;
+        m_NullTerminatedPtr = (uintptr_t)nullTerminatedCopy;
+        return nullTerminatedCopy;
     }
-	return (const CharT*)v;
+	return (const CharT*)m_NullTerminatedPtr;
 }
 
 template<typename CharT>
