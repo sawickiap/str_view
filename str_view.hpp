@@ -2,12 +2,17 @@
 str_view - null-termination-aware string-view class for C++.
 
 Author:  Adam Sawicki - http://asawicki.info - adam__DELETE__@asawicki.info
-Version: 2.0.0-beta.1, 2020-04-26
+Version: 2.0.0, 2021-01-06
 License: MIT
 
 Documentation: see README.md and comments in the code below.
 
 # Version history
+
+Version: 2.0.0, 2021-01-06
+
+    Minor changes:
+    - Fixed str_view.natvis file.
 
 Version 2.0.0-beta.1, 2020-04-26
 
