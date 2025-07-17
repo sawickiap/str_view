@@ -1,13 +1,19 @@
 /*
 str_view - null-termination-aware string-view class for C++.
 
-Author:  Adam Sawicki - http://asawicki.info - adam__DELETE__@asawicki.info
-Version: 2.0.0, 2021-01-06
-License: MIT
+Author:  Adam Sawicki - https://asawicki.info - adam__DELETE__@asawicki.info
+Version: 2.1.0, 2025-07-17
 
 Documentation: see README.md and comments in the code below.
 
 # Version history
+
+Version: 2.1.0, 2021-07-17
+
+    Major changes:
+    - Added overloads of methods to_string, to_string_view that return their outputs
+      by value, in hope they work efficiently thanks to Return Value Optimization
+      in modern C++.
 
 Version: 2.0.0, 2021-01-06
 
@@ -42,7 +48,9 @@ Version 1.0.0, 2018-07-18
 
 # License
 
-Copyright 2018-2020 Adam Sawicki
+MIT License
+
+Copyright 2018-2025 Adam Sawicki
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -230,9 +238,11 @@ public:
     inline size_t copy_to(CharT* dst, size_t offset = 0, size_t length = SIZE_MAX) const;
 
     inline void to_string(StringT& dst, size_t offset = 0, size_t length = SIZE_MAX) const;
+    inline StringT to_string(size_t offset = 0, size_t length = SIZE_MAX) const;
 
 #if STR_VIEW_CPP17
     inline void to_string_view(StringViewT& dst, size_t offset = 0, size_t length = SIZE_MAX) const;
+    inline StringViewT to_string_view(size_t offset = 0, size_t length = SIZE_MAX) const;
 #endif
 
     /*
@@ -580,6 +590,15 @@ inline void str_view_template<CharT>::to_string(StringT& dst, size_t offset, siz
     dst.assign(m_Begin + offset, m_Begin + (offset + length));
 }
 
+template<typename CharT>
+inline str_view_template<CharT>::StringT str_view_template<CharT>::to_string(size_t offset, size_t length) const
+{
+    const size_t thisLen = this->length();
+    assert(offset <= thisLen);
+    length = std::min(length, thisLen - offset);
+    return StringT(m_Begin + offset, m_Begin + (offset + length));
+}
+
 #if STR_VIEW_CPP17
 
 template<typename CharT>
@@ -589,6 +608,15 @@ inline void str_view_template<CharT>::to_string_view(StringViewT& dst, size_t of
     assert(offset <= thisLen);
     length = std::min(length, thisLen - offset);
     dst = StringViewT(m_Begin + offset, length);
+}
+
+template<typename CharT>
+inline str_view_template<CharT>::StringViewT str_view_template<CharT>::to_string_view(size_t offset, size_t length) const
+{
+    const size_t thisLen = this->length();
+    assert(offset <= thisLen);
+    length = std::min(length, thisLen - offset);
+    return StringViewT(m_Begin + offset, length);
 }
 
 #endif // #if STR_VIEW_CPP17
