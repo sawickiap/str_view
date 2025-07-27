@@ -124,6 +124,9 @@ static void TestOperators()
     str.to_string(returned);
     TEST(returned == original);
 
+    returned = str.to_string();
+    TEST(returned == original);
+
     string returned2;
     str.to_string(returned2, 1, 3);
     TEST(returned2 == "BCD");
@@ -287,6 +290,9 @@ static void TestCpp17()
     TEST(v1 == "ABCDEF");
     std::string_view stlView2;
     v1.to_string_view(stlView2);
+    TEST(stlView2 == "ABCDEF");
+
+    stlView2 = v1.to_string_view();
     TEST(stlView2 == "ABCDEF");
 
     v1 = str_view(stlView1, 1, 4);

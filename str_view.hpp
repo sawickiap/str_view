@@ -8,7 +8,12 @@ Documentation: see README.md and comments in the code below.
 
 # Version history
 
-Version: 2.1.0, 2021-07-17
+Version: 2.1.1, 2025-07-27
+
+    - Fixed compilation errors regarding new functions to_string, to_string_view.
+    - Added missing tests.
+
+Version: 2.1.0, 2025-07-17
 
     Major changes:
     - Added overloads of methods to_string, to_string_view that return their outputs
@@ -591,7 +596,7 @@ inline void str_view_template<CharT>::to_string(StringT& dst, size_t offset, siz
 }
 
 template<typename CharT>
-inline str_view_template<CharT>::StringT str_view_template<CharT>::to_string(size_t offset, size_t length) const
+inline typename str_view_template<CharT>::StringT str_view_template<CharT>::to_string(size_t offset, size_t length) const
 {
     const size_t thisLen = this->length();
     assert(offset <= thisLen);
@@ -611,7 +616,7 @@ inline void str_view_template<CharT>::to_string_view(StringViewT& dst, size_t of
 }
 
 template<typename CharT>
-inline str_view_template<CharT>::StringViewT str_view_template<CharT>::to_string_view(size_t offset, size_t length) const
+inline typename str_view_template<CharT>::StringViewT str_view_template<CharT>::to_string_view(size_t offset, size_t length) const
 {
     const size_t thisLen = this->length();
     assert(offset <= thisLen);
