@@ -3,7 +3,7 @@
 Null-termination-aware string-view class for C++.
 
 Author: Adam Sawicki - https://asawicki.info<br>
-Version: 2.1.1, 2025-07-27<br>
+Version: 2.1.2, 2026-11-03<br>
 License: MIT
 
 Documentation: see below and comments in the code of `str_view.hpp` file.

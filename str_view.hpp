@@ -2,11 +2,15 @@
 str_view - null-termination-aware string-view class for C++.
 
 Author:  Adam Sawicki - https://asawicki.info - adam__DELETE__@asawicki.info
-Version: 2.1.0, 2025-07-17
+Version: 2.1.2, 2026-11-03
 
 Documentation: see README.md and comments in the code below.
 
 # Version history
+
+Version: 2.1.2, 2026-11-03
+
+    - Fixed empty string view handling in null-terminated construction, substr, and to_string.
 
 Version: 2.1.1, 2025-07-27
 
@@ -55,7 +59,7 @@ Version 1.0.0, 2018-07-18
 
 MIT License
 
-Copyright 2018-2025 Adam Sawicki
+Copyright 2018-2026 Adam Sawicki
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
@@ -404,8 +408,8 @@ inline str_view_template<CharT>::str_view_template(const CharT* str, size_t leng
     {
         m_Begin = str;
         m_NullTerminatedPtr = str;
+        assert(m_Begin[m_Length] == (CharT)0); // Make sure it's really null terminated.
     }
-    assert(m_Begin[m_Length] == (CharT)0); // Make sure it's really null terminated.
 }
 
 template<typename CharT>
@@ -592,7 +596,10 @@ inline void str_view_template<CharT>::to_string(StringT& dst, size_t offset, siz
     const size_t thisLen = this->length();
     assert(offset <= thisLen);
     length = std::min(length, thisLen - offset);
-    dst.assign(m_Begin + offset, m_Begin + (offset + length));
+    if(length)
+        dst.assign(m_Begin + offset, m_Begin + (offset + length));
+    else
+        dst.clear();
 }
 
 template<typename CharT>
@@ -601,6 +608,8 @@ inline typename str_view_template<CharT>::StringT str_view_template<CharT>::to_s
     const size_t thisLen = this->length();
     assert(offset <= thisLen);
     length = std::min(length, thisLen - offset);
+    if(length == 0)
+        return StringT();
     return StringT(m_Begin + offset, m_Begin + (offset + length));
 }
 
@@ -639,6 +648,8 @@ inline str_view_template<CharT> str_view_template<CharT>::substr(size_t offset, 
     const size_t thisLen = this->length();
     assert(offset <= thisLen);
     length = std::min(length, thisLen - offset);
+    if(length == 0)
+        return str_view_template<CharT>();
     // Result will be null-terminated.
     if(m_NullTerminatedPtr == m_Begin && length == thisLen - offset)
         return str_view_template<CharT>(m_Begin + offset, length, StillNullTerminated());

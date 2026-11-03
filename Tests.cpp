@@ -45,6 +45,103 @@ static void TestBasicConstruction()
     TEST(fromEmptyString.begin() == fromEmptyString.end());
 }
 
+template<typename CharT>
+static void TestEmptyView(const str_view_template<CharT>& view)
+{
+    TEST(view.empty());
+    TEST(view.length() == 0);
+    TEST(view.begin() == view.end());
+    TEST(view.c_str() != nullptr);
+    TEST(*view.c_str() == CharT(0));
+}
+
+template<typename CharT>
+static void TestEmptyStringConversion(const str_view_template<CharT>& view, size_t offset, size_t length)
+{
+    typedef typename str_view_template<CharT>::StringT StringT;
+    // The output overload must clear an existing value, not just leave it unchanged.
+    StringT dst(3, CharT('X'));
+    view.to_string(dst, offset, length);
+    TEST(dst.empty());
+    TEST(view.to_string(offset, length).empty());
+}
+
+template<typename CharT>
+static void TestEmptyViewHandling()
+{
+    typedef str_view_template<CharT> ViewT;
+    typedef typename ViewT::StringT StringT;
+    const CharT text[] = { CharT('A'), CharT('B'), CharT('C'), CharT(0) };
+    const CharT emptyText[] = { CharT(0) };
+    const StringT emptyString;
+    const StringT textString(text);
+
+    // Explicit null-termination with length 0 must not dereference a null pointer.
+    const ViewT fromNull(nullptr, 0, typename ViewT::StillNullTerminated());
+    const ViewT fromEmpty(emptyText, 0, typename ViewT::StillNullTerminated());
+    const ViewT fromZeroLength(text, 0, typename ViewT::StillNullTerminated());
+    TestEmptyView(fromNull);
+    TestEmptyView(fromEmpty);
+    TestEmptyView(fromZeroLength);
+
+    const ViewT nonEmpty(text, 3, typename ViewT::StillNullTerminated());
+    TEST(nonEmpty.length() == 3);
+    TEST(nonEmpty.c_str() == text);
+    TEST(nonEmpty.to_string() == textString);
+
+    const ViewT emptyViews[] = {
+        ViewT(), ViewT(nullptr), ViewT(emptyText), ViewT(nullptr, 0),
+        ViewT(text, 0), ViewT(emptyString), ViewT(textString, 1, 0),
+        fromNull, fromEmpty, fromZeroLength
+    };
+    for(const ViewT& view : emptyViews)
+    {
+        // Exercise both default arguments and explicitly empty/clamped ranges.
+        StringT dst(3, CharT('X'));
+        view.to_string(dst);
+        TEST(dst.empty());
+        TEST(view.to_string().empty());
+        TestEmptyStringConversion(view, 0, 0);
+        TestEmptyStringConversion(view, 0, SIZE_MAX);
+        TestEmptyStringConversion(view, 0, 1);
+
+        TestEmptyView(view.substr());
+        TestEmptyView(view.substr(0, 0));
+        TestEmptyView(view.substr(0, 1));
+    }
+
+    // Cover unknown length, known null-termination, and a non-terminated buffer.
+    const CharT buffer[] = { CharT('A'), CharT('B'), CharT('C') };
+    const ViewT views[] = { ViewT(text), nonEmpty, ViewT(buffer, 3) };
+    for(const ViewT& view : views)
+    {
+        // Do this before querying length(), while the C-string length can be unknown.
+        TestEmptyView(view.substr(1, 0));
+        TestEmptyView(view.substr(3, 1));
+        TestEmptyView(view.substr(3));
+        TestEmptyView(view.substr(3, 0));
+        TestEmptyStringConversion(view, 1, 0);
+        TestEmptyStringConversion(view, 3, 0);
+        TestEmptyStringConversion(view, 3, 1);
+        TestEmptyStringConversion(view, 3, SIZE_MAX);
+
+        // Non-empty slices must still preserve their contents and clamp at the end.
+        TEST(view.substr(1).to_string() == textString.substr(1));
+        TEST(view.substr(1, SIZE_MAX).to_string() == textString.substr(1));
+        TEST(view.to_string(1, SIZE_MAX) == textString.substr(1));
+        StringT dst;
+        view.to_string(dst, 1, SIZE_MAX);
+        TEST(dst == textString.substr(1));
+    }
+
+    // Also exercise empty slices after c_str() has cached a terminated copy.
+    const ViewT cached(buffer, 3);
+    TEST(StringT(cached.c_str()) == textString);
+    TestEmptyView(cached.substr(1, 0));
+    TestEmptyView(cached.substr(3));
+    TestEmptyStringConversion(cached, 3, SIZE_MAX);
+}
+
 static void TestAdvancedConstruction()
 {
     const char* sz = "ABCDE";
@@ -695,6 +792,8 @@ static void TestDocumentationSamples()
 int main()
 {
     TestBasicConstruction();
+    TestEmptyViewHandling<char>();
+    TestEmptyViewHandling<wchar_t>();
     TestAdvancedConstruction();
     TestCopying();
     TestOperators();
